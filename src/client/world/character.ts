@@ -1033,7 +1033,7 @@ export class Person {
   /** The throwing arm (or arms), and the dart or axe in hand, over whatever they were doing. */
   private ocheStep(dt: number) {
     const o = this.oche!;
-    const t = THROW[o.game];
+    const t = THROW[o.game as keyof typeof THROW] ?? THROW.darts;
     if (o.autoT >= 0) {
       o.autoT += dt;
       o.want = Math.min(1, o.autoT / t.auto);
