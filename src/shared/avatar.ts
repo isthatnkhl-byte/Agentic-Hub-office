@@ -6,11 +6,22 @@ export const HAIR_COLORS = ['#2b2d42', '#4a3222', '#6f4e37', '#e9c46a', '#c1440e
 export const HAIR_COLOR_NAMES = ['Black', 'Dark brown', 'Brown', 'Blonde', 'Ginger', 'Silver', 'Red', 'Pink', 'Purple', 'Teal'];
 export const HAIR_STYLES = ['Short', 'Long', 'Bun', 'Spiky', 'Curly', 'Ponytail', 'Bald'];
 
+/** Ready-made user characters, rendered by the office's shared procedural Person model. */
+export const CHARACTER_TEMPLATES = [
+  { id: 'nova', name: 'Nova', description: 'The bright idea person', look: { skin: 2, hair: 3, style: 1 }, color: '#4f86f7', mark: '✦' },
+  { id: 'kai', name: 'Kai', description: 'The calm problem solver', look: { skin: 5, hair: 0, style: 0 }, color: '#06d6a0', mark: '⌘' },
+  { id: 'mira', name: 'Mira', description: 'The thoughtful maker', look: { skin: 1, hair: 8, style: 2 }, color: '#9d4edd', mark: '✿' },
+  { id: 'theo', name: 'Theo', description: 'The curious explorer', look: { skin: 3, hair: 4, style: 3 }, color: '#f77f00', mark: '➤' },
+  { id: 'zara', name: 'Zara', description: 'The bold team builder', look: { skin: 6, hair: 9, style: 5 }, color: '#ef476f', mark: '❋' },
+] as const;
+
 export interface Look {
   skin: number;
   hair: number;
   style: number;
 }
+
+export type CharacterTemplate = (typeof CHARACTER_TEMPLATES)[number];
 
 function hash(s: string): number {
   let h = 2166136261;
