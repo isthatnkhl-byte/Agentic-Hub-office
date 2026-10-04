@@ -5,6 +5,7 @@ import { isAgentEffort, isAgentProvider, isClaudeModel, type AgentChoice, type A
 import { DESK_BY_ID, SEATS, nextFreeSeat } from '../shared/layout.js';
 import { isValidDshModel, isValidGrokModel, isValidMuseModel, isValidOpenCodeModel, validateWorkerEffort, validateWorkerModel } from './agents.js';
 import { PROMPTS } from '../shared/prompts.js';
+import { VfsManager } from './vfs/vfs-manager.js';
 
 /** Another floor's repository for a worker to work in too (see WorkerInfo.repos). */
 export interface RepoSource {
@@ -80,6 +81,8 @@ export class TaskQueue {
   private stopped = false;
   private lastStatus = new Map<string, WorkerStatus>();
 
+  private projectDir: string;
+
   constructor(
     dataDir: string,
     private workers: QueueWorkers,
@@ -87,9 +90,14 @@ export class TaskQueue {
     private useWorktree: boolean,
     private events: QueueEvents,
   ) {
+    this.projectDir = path.basename(dataDir) === '.agent-office' ? path.dirname(dataDir) : dataDir;
     this.statePath = path.join(dataDir, 'queue.json');
     this.restore();
     this.timer = setInterval(() => this.pump(), PUMP_MS);
+  }
+
+  private resolveWorktreePath(p: string): string {
+    return path.isAbsolute(p) ? p : path.resolve(this.projectDir, p);
   }
 
   state(): QueueState {
@@ -343,6 +351,16 @@ export class TaskQueue {
     t.status = 'done';
     t.outcome = outcome;
     t.finishedAt = Date.now();
+    if (t.workerId) {
+      const w = this.workers.list().find((worker) => worker.id === t.workerId);
+      if (w?.worktree?.path) {
+        const wtAbs = this.resolveWorktreePath(w.worktree.path);
+        const mem = VfsManager.readTaskMemory(wtAbs);
+        if (mem) {
+          t.taskMemory = mem;
+        }
+      }
+    }
     const who = t.workerName ?? 'Its worker';
     if (outcome === 'done') {
       this.events.toast(`📋 ${who} finished ${label(t)}`, 'info');
@@ -460,6 +478,7 @@ export class TaskQueue {
       if (!desk) break;
       let startBranch: string | undefined;
       let promptText = t.prompt;
+      const priorMemories: string[] = [];
       if (t.swarmDependsOn?.length) {
         const depInfos: string[] = [];
         for (const depId of t.swarmDependsOn) {
@@ -467,6 +486,9 @@ export class TaskQueue {
           if (dep) {
             const branchInfo = dep.branch ? ` (branch: ${dep.branch})` : '';
             depInfos.push(`- Prerequisite "${dep.title}"${branchInfo} is completed.`);
+            if (dep.taskMemory) {
+              priorMemories.push(`### Prerequisite: ${dep.title} (${dep.swarmRole ?? 'worker'})\n${dep.taskMemory}`);
+            }
             if (!startBranch && dep.branch) {
               startBranch = dep.branch;
             }
@@ -475,6 +497,17 @@ export class TaskQueue {
         if (depInfos.length) {
           promptText += `\n\nPrerequisite tasks completed before your turn:\n${depInfos.join('\n')}\nYour worktree is branched from prerequisite work so all prerequisite code is already in your repository.`;
         }
+      }
+      if (t.swarmId) {
+        promptText += VfsManager.formatVfsBootInstructions({
+          id: t.id,
+          title: t.title,
+          role: t.swarmRole ?? 'general',
+          work: t.prompt,
+          acceptanceCriteria: t.swarmAcceptanceCriteria,
+          boundedContextPaths: t.swarmContextInclude,
+          dependsOn: t.swarmDependsOn,
+        });
       }
       const note = this.useWorktree ? this.events.worktreeNote?.() ?? PROMPTS['queue.worktree'].text : '';
       const r = this.workers.spawn(desk, `${t.addedBy} (queue)`, note ? `${promptText}\n\n${note}` : promptText, this.useWorktree, 'agent', t.provider ?? this.workers.defaultProvider, t.model, t.effort, undefined, t.owner, [], undefined, t.addedById, t.autoApprove ?? !!t.swarmId, t.title, startBranch);
@@ -493,6 +526,24 @@ export class TaskQueue {
       t.branch = r.worktree?.branch;
       t.startedAt = Date.now();
       t.error = undefined;
+      if (r.worktree?.path) {
+        const wtAbs = this.resolveWorktreePath(r.worktree.path);
+        VfsManager.mount({
+          worktreePath: wtAbs,
+          task: {
+            id: t.id,
+            title: t.title,
+            role: t.swarmRole ?? 'general',
+            work: t.prompt,
+            acceptanceCriteria: t.swarmAcceptanceCriteria,
+            boundedContextPaths: t.swarmContextInclude,
+            dependsOn: t.swarmDependsOn,
+            startedAt: t.startedAt,
+          },
+          priorTaskMemory: priorMemories.join('\n\n'),
+          availableFiles: t.swarmContextManifest?.files.map((f) => f.path),
+        });
+      }
       this.lastStatus.set(r.id, r.status);
       this.events.toast(`📋 ${r.name} sat down at ${DESK_BY_ID.get(desk)?.label ?? 'a desk'} to work on ${label(t)}`, 'info');
       if (t.issue !== undefined) {

@@ -456,6 +456,8 @@ export interface QueueTask {
   error?: string;
   /** The pull request that closes the issue, or was opened from the worker's branch. */
   pr?: { number: number; url: string; state: string; title: string };
+  /** Cognitive findings and decisions exported to .office/vfs/memory.md for downstream tasks. */
+  taskMemory?: string;
 }
 
 export interface QueueState {
@@ -488,6 +490,8 @@ export interface MeetingSwarmTask {
   workerId?: string;
   branch?: string;
   pr?: QueueTask['pr'];
+  /** Cognitive findings and decisions exported to .office/vfs/memory.md for downstream tasks. */
+  taskMemory?: string;
 }
 
 export interface SwarmContextManifest {

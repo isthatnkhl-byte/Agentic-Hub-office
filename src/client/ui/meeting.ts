@@ -11,6 +11,7 @@ import {
   outputProblem,
   slugify,
 } from '../../shared/meetings';
+import { ComplexityGate } from '../../shared/cost-optimizer';
 import { fmtTokens, type Meeting, type MeetingPattern, type MeetingTurn } from '../../shared/protocol';
 import type { Net } from '../net';
 import { store } from '../state';
@@ -263,6 +264,79 @@ function meetingForm(net: Net, preset: MeetingPreset | undefined, done: () => vo
   };
   renderSquadPresets();
 
+  const costAdvisorRow = h('div.meeting-field.meeting-cost-advisor');
+
+  const syncCostAdvisor = () => {
+    if (pattern !== 'swarm') {
+      costAdvisorRow.classList.add('hidden');
+      costAdvisorRow.replaceChildren();
+      return;
+    }
+    const text = about.value.trim();
+    if (!text) {
+      costAdvisorRow.classList.add('hidden');
+      costAdvisorRow.replaceChildren();
+      return;
+    }
+    const analysis = ComplexityGate.analyze(text);
+    costAdvisorRow.classList.remove('hidden');
+    if (analysis.recommendedMode === 'single') {
+      costAdvisorRow.replaceChildren(
+        h(
+          'div.cost-advisory-card.warning',
+          {},
+          h(
+            'div.advisory-header',
+            {},
+            h('span.advisory-icon', {}, '💡'),
+            h('strong', {}, 'Cost Advisory: Low-Complexity Query Detected'),
+          ),
+          h(
+            'p.advisory-body',
+            {},
+            `This prompt appears to be an informational question or surgical edit. A full multi-agent swarm will burn ~${Math.round(analysis.tokenProjection.swarmTokens / 1000)}k tokens ($${analysis.tokenProjection.swarmCostUsd.toFixed(2)}), whereas a single worker can complete it directly for ~${Math.round(analysis.tokenProjection.singleWorkerTokens / 1000)}k tokens ($${analysis.tokenProjection.singleCostUsd.toFixed(2)}).`,
+          ),
+          h(
+            'div.advisory-actions',
+            {},
+            h(
+              'button.btn.small.primary.cost-switch-btn',
+              {
+                type: 'button',
+                onclick: () => {
+                  pickPattern('debate');
+                  roles = ['Engineer'];
+                  renderRoles();
+                  toast(`⚡ Switched to Single Worker mode (${analysis.tokenProjection.estimatedSavingsPercent}% token savings)`, 'info');
+                },
+              },
+              `⚡ Switch to Single Worker (${analysis.tokenProjection.estimatedSavingsPercent}% Savings)`,
+            ),
+            h('span.advisory-keep', {}, 'or continue with Swarm below'),
+          ),
+        ),
+      );
+    } else {
+      costAdvisorRow.replaceChildren(
+        h(
+          'div.cost-advisory-card.info',
+          {},
+          h(
+            'div.advisory-header',
+            {},
+            h('span.advisory-icon', {}, '🐝'),
+            h('strong', {}, `Multi-Agent Swarm Justified (Complexity Score: ${analysis.score}/10)`),
+          ),
+          h(
+            'p.advisory-body',
+            {},
+            `Cross-domain scope detected across multiple systems. Projected spend: ~${Math.round(analysis.tokenProjection.swarmTokens / 1000)}k tokens ($${analysis.tokenProjection.swarmCostUsd.toFixed(2)}) across parallel worktrees.`,
+          ),
+        ),
+      );
+    }
+  };
+
   const def = () => MEETING_PATTERNS[pattern];
   const slug = () => slugify(titleIn.value.trim() || about.value.trim().split('\n')[0] || 'meeting', 32);
   const pr = () => Number(prSel.value) || undefined;
@@ -315,6 +389,7 @@ function meetingForm(net: Net, preset: MeetingPreset | undefined, done: () => vo
     submit.textContent = p === 'swarm' ? '🐝 Plan and start swarm' : '🤝 Start the meeting';
     renderRoles();
     syncOutput();
+    syncCostAdvisor();
   };
   for (const id of MEETING_PATTERN_IDS) {
     const d = MEETING_PATTERNS[id];
@@ -334,7 +409,10 @@ function meetingForm(net: Net, preset: MeetingPreset | undefined, done: () => vo
   });
   budgetIn.addEventListener('input', () => (budgetTouched = true));
   titleIn.addEventListener('input', syncOutput);
-  about.addEventListener('input', syncOutput);
+  about.addEventListener('input', () => {
+    syncOutput();
+    syncCostAdvisor();
+  });
   prSel.addEventListener('change', syncOutput);
 
   const bodyEl = h(
@@ -342,6 +420,7 @@ function meetingForm(net: Net, preset: MeetingPreset | undefined, done: () => vo
     {},
     patterns,
     squadPresetsRow,
+    costAdvisorRow,
     h('div.meeting-field', {}, aboutLabel, about),
     h('div.meeting-field', {}, titleIn),
     prRow,
