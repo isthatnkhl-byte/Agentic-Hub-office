@@ -1,0 +1,170 @@
+import { spawn, execFileSync } from 'node:child_process';
+import os from 'node:os';
+import path from 'node:path';
+import { loadConfig, ensureSelfSigned } from './config.js';
+import { startServer } from './server.js';
+import { tildify } from './building.js';
+
+if (process.platform === 'win32') {
+  for (const [key, subkey] of [
+    ['HKCU\\Environment', 'Path'],
+    ['HKLM\\System\\CurrentControlSet\\Control\\Session Manager\\Environment', 'Path'],
+  ]) {
+    try {
+      const out = execFileSync('reg.exe', ['query', key, '/v', subkey], { encoding: 'utf8', stdio: ['ignore', 'pipe', 'ignore'] });
+      const m = out.match(/REG_(?:EXPAND_)?SZ\s+(.*)/i);
+      if (m?.[1]) {
+        const expanded = m[1].trim().replace(/%([^%]+)%/g, (_, n) => process.env[n] || '');
+        const dirs = new Set([...expanded.split(';'), ...(process.env.PATH || '').split(';')].filter(Boolean));
+        process.env.PATH = [...dirs].join(';');
+      }
+    } catch {}
+  }
+}
+
+const argv = process.argv.slice(2);
+if (argv[0] === 'prune') {
+  const { prune } = await import('./prune.js');
+  process.exit(await prune(argv.slice(1)));
+}
+if (argv[0] === 'accounts') {
+  const { accountsCommand } = await import('./accounts.js');
+  process.exit(accountsCommand(argv.slice(1)));
+}
+if (argv[0] === 'setup') {
+  const { setupCommand } = await import('./setup.js');
+  process.exit(await setupCommand(argv.slice(1)));
+}
+
+const cfg = loadConfig(argv);
+await ensureSelfSigned(cfg);
+const { interactive, welcome } = await import('./setup.js');
+const atTerminal = interactive();
+// A new office started in a terminal: where projects go, GitHub, and the first floor, before it opens.
+if (!cfg.project && atTerminal) await welcome(cfg);
+
+let office: Awaited<ReturnType<typeof startServer>>;
+try {
+  office = await startServer(cfg);
+} catch (err) {
+  const e = err as NodeJS.ErrnoException;
+  if (e.code === 'EADDRINUSE') console.error(`agent-office: port ${cfg.port} is already in use (try --port)`);
+  else console.error(`agent-office: ${e.message}`);
+  process.exit(1);
+}
+
+const scheme = cfg.tls ? 'https' : 'http';
+const everywhere = cfg.host === '0.0.0.0' || cfg.host === '::';
+const loopback = cfg.host === 'localhost' || cfg.host === '::1' || cfg.host.startsWith('127.');
+// Where this machine's browser finds the office: localhost, unless it's bound to one other address.
+const here = `${scheme}://${everywhere || loopback ? 'localhost' : cfg.host}:${cfg.port}`;
+const urls = new Set<string>([here]);
+if (everywhere) {
+  for (const list of Object.values(os.networkInterfaces())) {
+    for (const ni of list ?? []) if (ni.family === 'IPv4' && !ni.internal) urls.add(`${scheme}://${ni.address}:${cfg.port}`);
+  }
+}
+
+const agent = office.resolvedAgent;
+function floorsLine() {
+  const floors = office.floors();
+  const where = `new ones are cloned into ${tildify(office.projectsDir())}`;
+  if (!floors.length) return `🛗 no floors yet — ride the elevator in the office to add a project (${where})`;
+  return `🛗 ${floors.length} floor${floors.length === 1 ? '' : 's'}: ${floors.map((f) => f.def.name).join(', ')} (${where})`;
+}
+
+function passwordLine() {
+  if (!office.accounts.sharedPassword) return 'off — everyone signs in with their own account (agent-office accounts)';
+  if (!cfg.passwordGenerated) return '(from --password / AGENT_OFFICE_PASSWORD)';
+  if (cfg.claimToken && !cfg.claimed) return 'shown exactly once to whoever opens the claim link (/claim?t=…)';
+  if (cfg.claimed || !cfg.password) return '(already claimed — never shown again; reset with --reset-password)';
+  return cfg.password;
+}
+/**
+ * Opens the office in this computer's browser. Not over SSH, in CI, or on a Linux box without a
+ * desktop: nobody would see it there.
+ */
+function openBrowser(url: string): boolean {
+  if (process.env.SSH_CONNECTION || process.env.SSH_TTY || process.env.CI) return false;
+  if (process.platform === 'linux' && !process.env.DISPLAY && !process.env.WAYLAND_DISPLAY) return false;
+  const [cmd, args] =
+    process.platform === 'darwin' ? ['open', [url]] : process.platform === 'win32' ? ['rundll32', ['url.dll,FileProtocolHandler', url]] : ['xdg-open', [url]];
+  spawn(cmd, args, { stdio: 'ignore', detached: true })
+    .on('error', () => {})
+    .unref();
+  return true;
+}
+
+// Someone started it in a terminal: a link that signs them in once, opened in their browser, so
+// there's no password to copy. Not for an office that's claimed from a link (deploy/provision.sh)
+// or signed in to with accounts only.
+let signIn = '';
+let opened = false;
+if (atTerminal && office.accounts.sharedPassword && !cfg.claimToken) {
+  signIn = here + office.signInLink();
+  if (cfg.open) opened = openBrowser(signIn);
+}
+
+// Started in a project that's still one of the floors (it can be taken off like any other).
+const local = cfg.project && office.floors().some((f) => path.resolve(f.def.dir) === cfg.project);
+console.log(`
+  🏢  Agentic Hub is open${local ? ` for ${cfg.project}` : ''}
+
+  ${floorsLine()}
+
+  ${[...urls].join('\n  ')}${loopback ? '\n  (only this computer can open it: --host 0.0.0.0 lets your network in)' : ''}
+${signIn ? `\n  sign in: ${signIn}\n           ${opened ? 'opened in your browser; ' : ''}the link works once\n` : ''}
+  password: ${passwordLine()}
+  room code: ${cfg.roomCode}
+  join link: ${here}/join#${cfg.roomCode}
+  default agent: ${[agent ?? `${cfg.agentCmd} (via login shell)`, ...cfg.agentArgs].join(' ')}
+  choose Antigravity, Claude Code, Codex, or OpenCode when hiring or queueing a task
+${cfg.tls || loopback ? '' : '\n  tip: voice & screen share need https off localhost — use a reverse proxy or --self-signed\n'}`);
+
+let tunnelProcess: ReturnType<typeof spawn> | undefined;
+
+if (cfg.share) {
+  console.log('\n  🌍 Initializing Global Multiplayer Tunnel (Cloudflare Edge)...');
+  const tunnelArgs = ['--yes', 'cloudflared', 'tunnel', '--url', `http://127.0.0.1:${cfg.port}`];
+  tunnelProcess = spawn('npx', tunnelArgs, { shell: true, stdio: ['ignore', 'pipe', 'pipe'] });
+
+  const onData = (data: Buffer) => {
+    const text = data.toString('utf8');
+    const match = text.match(/https:\/\/[a-zA-Z0-9-]+\.trycloudflare\.com/);
+    if (match) {
+      const publicUrl = match[0];
+      console.log(`
+  =============================================================================
+  🌍 GLOBAL MULTIPLAYER LINK IS ACTIVE!
+  🔗 Anyone on any laptop in the world can join your 3D Hub with this link:
+     ${publicUrl}/join#${cfg.roomCode}
+  =============================================================================
+`);
+    }
+  };
+
+  tunnelProcess.stdout?.on('data', onData);
+  tunnelProcess.stderr?.on('data', onData);
+  tunnelProcess.on('error', (err) => {
+    console.error(`  [!] Global tunnel error: ${err.message}`);
+  });
+}
+
+let closing = false;
+// SIGTERM is a restart (tsx watch reloading, a plain `kill`, systemd): workers keep running in their
+// terminal host and the next hub picks them back up. Ctrl+C closes the hub and stops them.
+const stop = (signal: NodeJS.Signals) => {
+  if (closing) process.exit(1);
+  closing = true;
+  if (tunnelProcess) {
+    try { tunnelProcess.kill(); } catch {}
+  }
+  const keep = signal === 'SIGTERM';
+  console.log(keep ? '\n  closing Agentic Hub — workers keep running for the next one…' : '\n  closing Agentic Hub…');
+  office.shutdown(keep);
+  setTimeout(() => process.exit(0), 300);
+};
+// Last line of defense: one bad request must never take down every running worker.
+process.on('unhandledRejection', (err) => console.error('agentic-hub: unhandled rejection', err));
+process.on('SIGINT', stop);
+process.on('SIGTERM', stop);
