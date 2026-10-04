@@ -16,6 +16,8 @@
         <select id="floor" aria-label="Floor"></select>
       </label>
       <div style="display:flex; gap:6px; margin-left:auto;">
+        <button id="btn-swarm" class="btn" type="button" title="Autonomous Swarm Orchestrator">🐝 Swarm</button>
+        <button id="btn-whiteboard" class="btn" type="button" title="Collaborative Whiteboard">📝 Board</button>
         <button id="btn-sync" class="btn" type="button" title="Sync repository workflow">🔄 Sync</button>
         <button id="btn-invite" class="btn" type="button" title="Multiplayer invite and room code">👥 Invite</button>
         <a id="to-3d" class="btn" href="/?3d=1" title="The 3D office, where you walk around">🏢 3D</a>
@@ -24,6 +26,7 @@
     <main class="lite-main">
       <p id="floor-meta" class="lite-meta"></p>
       <div id="elsewhere" class="lite-elsewhere hidden"></div>
+      <section id="swarm-banner" class="lite-swarm-banner hidden"></section>
       <h2 class="lite-h">Workers <span id="waiting-now" class="lite-waiting"></span></h2>
       <ul id="workers" class="lite-workers"></ul>
     </main>
