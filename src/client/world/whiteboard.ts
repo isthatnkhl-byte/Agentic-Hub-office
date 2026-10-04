@@ -6,6 +6,9 @@ import type { Collider, Interactable } from './office';
 // The whiteboard: a rolling whiteboard on casters out on the open floor, with a marker tray. Its
 // face shows whatever everyone has drawn on it (see ui/whiteboard.ts), live.
 
+import type { MeetingStatus, MeetingSwarmTask } from '../../shared/protocol';
+import { renderSwarmDag } from './swarm-dag-render';
+
 const ALU = '#aab4be';
 const INK = '#2b2d42';
 /** The face's canvas, in pixels per meter. */
@@ -14,6 +17,15 @@ const PX = 512;
 const PAD = 40;
 const FONT = 'Nunito, ui-rounded, system-ui, sans-serif';
 
+export interface SwarmWhiteboardData {
+  title?: string;
+  status?: MeetingStatus;
+  tasks: MeetingSwarmTask[];
+  tokens?: number;
+  budget?: number;
+  cost?: number;
+}
+
 export interface WhiteboardStand {
   group: THREE.Group;
   colliders: Collider[];
@@ -21,6 +33,8 @@ export interface WhiteboardStand {
   interactable: Interactable;
   /** Puts a drawing on the face (scaled to fit), or the "come and draw" note when there's none. */
   show(drawing: HTMLCanvasElement | null): void;
+  /** Projects the live Swarm DAG execution graph when a swarm meeting is active, or null to revert to drawings. */
+  showSwarm(data: SwarmWhiteboardData | null): void;
   /** How big a drawing fills the face, in pixels. */
   fit: { width: number; height: number };
 }
