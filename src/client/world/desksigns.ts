@@ -80,10 +80,20 @@ interface Hung {
   label: DeskLabel;
 }
 
+export interface WorkerDeskBadge {
+  name: string;
+  role?: string;
+  provider?: string;
+  status?: string;
+  color?: string;
+}
+
 export interface DeskSigns {
   group: THREE.Group;
   /** Hangs a sign for each of `labels`, over the desks `built` says are there (the back office's may not be yet). */
   set(labels: Record<string, DeskLabel>, built: (desk: DeskDef) => boolean): void;
+  /** Sets dynamic worker role badges over active desks; resets to floorplan labels on turnover. */
+  setWorkers(workers: Record<string, WorkerDeskBadge>, built: (desk: DeskDef) => boolean): void;
   /** The sign over a desk, if it has one. */
   get(deskId: string): THREE.Object3D | undefined;
 }
@@ -155,23 +165,43 @@ export function buildDeskSigns(): DeskSigns {
     }
   });
 
+  let currentBaseLabels: Record<string, DeskLabel> = {};
+  let currentWorkers: Record<string, WorkerDeskBadge> = {};
+
+  const applyLabels = (built: (desk: DeskDef) => boolean) => {
+    const effective: Record<string, DeskLabel> = { ...currentBaseLabels };
+    for (const [id, badge] of Object.entries(currentWorkers)) {
+      const statusIcon = badge.status === 'working' ? '⌨️ ' : badge.status === 'needs_input' ? '❗ ' : badge.status === 'done' ? '✅ ' : '';
+      const rolePrefix = badge.role ? `${badge.role}: ` : '';
+      const text = `${statusIcon}${rolePrefix}${badge.name}`;
+      effective[id] = { text, color: badge.color ?? '#e2e8f0', by: badge.name, at: Date.now() };
+    }
+
+    for (const [id, h] of hung) {
+      const l = effective[id];
+      if (l && keyOf(l, twoSided(id, effective, built)) === h.key) continue;
+      drop(h);
+      hung.delete(id);
+    }
+    for (const [id, label] of Object.entries(effective)) {
+      const desk = DESK_BY_ID.get(id);
+      if (!desk) continue;
+      let h = hung.get(id);
+      if (!h) hung.set(id, (h = make(desk, label, twoSided(id, effective, built))));
+      h.root.visible = built(desk);
+    }
+  };
+
   return {
     group,
     get: (deskId) => hung.get(deskId)?.root,
     set(labels, built) {
-      for (const [id, h] of hung) {
-        const l = labels[id];
-        if (l && keyOf(l, twoSided(id, labels, built)) === h.key) continue;
-        drop(h);
-        hung.delete(id);
-      }
-      for (const [id, label] of Object.entries(labels)) {
-        const desk = DESK_BY_ID.get(id);
-        if (!desk) continue;
-        let h = hung.get(id);
-        if (!h) hung.set(id, (h = make(desk, label, twoSided(id, labels, built))));
-        h.root.visible = built(desk);
-      }
+      currentBaseLabels = { ...labels };
+      applyLabels(built);
+    },
+    setWorkers(workers, built) {
+      currentWorkers = { ...workers };
+      applyLabels(built);
     },
   };
 }
