@@ -10,7 +10,7 @@ import { randomLook } from '../shared/avatar';
 import { ROOF } from '../shared/rooftop';
 import { DESK_BY_ID, nextFreeSeat } from '../shared/layout';
 import { isAsleep } from '../shared/status';
-import type { AgentEffort, AgentProvider, FloorInfo, WorkerInfo } from '../shared/protocol';
+import { fmtCost, fmtTokens, type AgentEffort, type AgentProvider, type FloorInfo, type MeetingSwarmTask, type SwarmTaskStatus, type WorkerInfo } from '../shared/protocol';
 import { $, clip, closeAllModals, doingNow, h, onDoingChange, onModalChange, openModal, readingNow, STATUS_LABEL, timeAgo, toast } from './ui/dom';
 import { openTerminal, openTerminalFor, routeTerminalMessage } from './ui/terminal';
 import { openChanges, openChangesFor, routeChangesMessage } from './ui/changes';
@@ -23,6 +23,9 @@ import { openMeeting, type MeetingPreset } from './ui/meeting';
 import { openSignIns } from './ui/signins';
 import { openInviteModal } from './ui/invite';
 import { syncWorkflow, routeSyncMessage } from './ui/sync';
+import { openWhiteboard, routeWhiteboardMessage } from './ui/whiteboard';
+import { openSwarmDagModal } from './ui/swarm-dag-modal';
+import { STATUS_THEMES } from './world/swarm-dag-render';
 import { modelBadge, providerLabel } from './ui/provider';
 import { byUrgency, waitingInOrder, waitingLabel } from './nextup';
 import { askNotifyPermission, DesktopNotifier, notifyPermission, waitingOnSomeone } from './notify';
@@ -53,6 +56,7 @@ net.onMessage((msg) => {
   routePullMessage(msg);
   routeWorktreeMessage(msg);
   routeSyncMessage(msg);
+  routeWhiteboardMessage(msg, net);
   switch (msg.t) {
     case 'welcome': {
       // Back from a restart on another version: this page's code is stale, so load the new one.
