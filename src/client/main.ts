@@ -2166,6 +2166,18 @@ function syncWorkers() {
     workerViews.delete(id);
   }
   arrangeSeats();
+  const workerBadges: Record<string, { name: string; role?: string; status?: string; color?: string }> = {};
+  for (const w of store.workers.values()) {
+    if (!w.deskId) continue;
+    const role = w.task?.role ? `🐝 ${w.task.role}` : w.provider === 'antigravity' ? '🪐 Antigravity' : w.kind === 'shell' ? '💻 Shell' : undefined;
+    workerBadges[w.deskId] = {
+      name: w.name,
+      role,
+      status: w.status,
+      color: w.color,
+    };
+  }
+  office.signs.setWorkers(workerBadges, (d) => deskBuilt(d, officeWing()));
   // Whoever's waiting on someone lines up for the throne, the one who's waited longest first.
   court?.line(waitingInOrder(store.workers.values()).filter(inCourt).map((w) => w.id));
   renderWorkers((id) => openWorkerTerminal(id), hireNearestDesk);
