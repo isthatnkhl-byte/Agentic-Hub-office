@@ -2,6 +2,8 @@ import * as THREE from 'three';
 import { MEETING_PATTERNS, meetingStage, meetingSummary } from '../../shared/meetings';
 import { fmtCost, fmtTokens, type Meeting, type MeetingState } from '../../shared/protocol';
 
+import { renderSwarmDag } from './swarm-dag-render';
+
 const FONT = 'Nunito, ui-rounded, system-ui, sans-serif';
 const MONO = 'ui-monospace, SFMono-Regular, Menlo, monospace';
 const INK = '#2b2d42';
@@ -78,6 +80,20 @@ export class MeetingBoardTexture {
       this.texture.needsUpdate = true;
       return;
     }
+
+    if (m.pattern === 'swarm' && m.swarmTasks && m.swarmTasks.length > 0) {
+      renderSwarmDag(g, W, H, {
+        title: m.title,
+        status: m.status,
+        tasks: m.swarmTasks,
+        tokens: m.tokens,
+        budget: m.budget,
+        cost: m.cost,
+      });
+      this.texture.needsUpdate = true;
+      return;
+    }
+
     const p = MEETING_PATTERNS[m.pattern];
     // Across the top: the file, and where the meeting is.
     g.fillStyle = m.status === 'stopped' ? '#ffd6e0' : m.status === 'partial' ? '#fff3bf' : m.status === 'done' ? '#caffbf' : '#e7f5ff';
