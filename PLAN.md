@@ -320,6 +320,7 @@ Developer 2 now establishes the complete frontend client infrastructure, interac
    - Cleaned of all minigame code (basketball court, golf greens, bars, and cars).
 6. **Automated Verification (`tests/termkeys.test.ts`, `tests/player.test.ts`)**:
    - Comprehensive unit tests verifying keyboard translations and collision handling alongside existing 3D model tests.
+<<<<<<< HEAD
 
 ---
 
@@ -366,4 +367,6 @@ Developer 1 establishes the entire backend core orchestration engine, multi-prov
      - `tests/swarm-context.test.ts`
      - `tests/swarm-plan.test.ts`
      - `tests/worktrees.test.ts`
+=======
+>>>>>>> a0b5c2c (Phase 2 (Dev 2): Spatial client bootstrap, Xterm terminal integration, clean navigation & HUD)
 
