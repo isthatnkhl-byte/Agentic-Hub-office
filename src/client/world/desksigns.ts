@@ -80,10 +80,20 @@ interface Hung {
   label: DeskLabel;
 }
 
+export interface WorkerDeskBadge {
+  name: string;
+  role?: string;
+  provider?: string;
+  status?: string;
+  color?: string;
+}
+
 export interface DeskSigns {
   group: THREE.Group;
   /** Hangs a sign for each of `labels`, over the desks `built` says are there (the back office's may not be yet). */
   set(labels: Record<string, DeskLabel>, built: (desk: DeskDef) => boolean): void;
+  /** Sets dynamic worker role badges over active desks; resets to floorplan labels on turnover. */
+  setWorkers(workers: Record<string, WorkerDeskBadge>, built: (desk: DeskDef) => boolean): void;
   /** The sign over a desk, if it has one. */
   get(deskId: string): THREE.Object3D | undefined;
 }
