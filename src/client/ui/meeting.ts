@@ -1,4 +1,16 @@
-import { MEETING_PATTERNS, MEETING_PATTERN_IDS, TOKENS_PER_SEAT, meetingSpend, meetingStage, outputProblem, slugify } from '../../shared/meetings';
+import {
+  MEETING_PATTERNS,
+  MEETING_PATTERN_IDS,
+  SWARM_SQUAD_PRESETS,
+  getSwarmSquad,
+  buildSquadMasterPrompt,
+  type SwarmSquadPreset,
+  TOKENS_PER_SEAT,
+  meetingSpend,
+  meetingStage,
+  outputProblem,
+  slugify,
+} from '../../shared/meetings';
 import { fmtTokens, type Meeting, type MeetingPattern, type MeetingTurn } from '../../shared/protocol';
 import type { Net } from '../net';
 import { store } from '../state';
@@ -15,6 +27,7 @@ export interface MeetingPreset {
   title?: string;
   pr?: number;
   issue?: number;
+  squadId?: string;
 }
 
 export interface MeetingActions {
@@ -149,12 +162,20 @@ function meetingForm(net: Net, preset: MeetingPreset | undefined, done: () => vo
   let roles: string[] = [];
   let outputTouched = false;
   let budgetTouched = false;
+
+  let selectedSquad: SwarmSquadPreset | null = null;
+  if (preset?.squadId) {
+    selectedSquad = getSwarmSquad(preset.squadId) ?? null;
+  } else if (preset?.title) {
+    selectedSquad = SWARM_SQUAD_PRESETS.find((s) => s.name === preset.title || s.id === preset.title) ?? null;
+  }
+
   const patterns = h('div.meeting-patterns', { role: 'radiogroup', 'aria-label': 'Pattern' });
   const about = h('textarea', { rows: 4, placeholder: 'The question to settle, or the task to do: e.g. “Should the dog use A* or a navmesh?”', 'aria-label': 'What the meeting is about' }) as HTMLTextAreaElement;
-  about.value = preset?.prompt ?? '';
+  about.value = preset?.prompt ?? (selectedSquad ? buildSquadMasterPrompt(selectedSquad) : '');
   const aboutLabel = h('label', {}, 'What’s it about?');
   const titleIn = h('input', { type: 'text', placeholder: 'Title (optional): the first line otherwise', maxlength: 100, 'aria-label': 'Title' }) as HTMLInputElement;
-  titleIn.value = preset?.title ?? '';
+  titleIn.value = preset?.title ?? (selectedSquad ? selectedSquad.name : '');
   const outputIn = h('input', { type: 'text', 'aria-label': 'Output file', spellcheck: 'false' }) as HTMLInputElement;
   const outputNote = h('small.muted');
   const prSel = h('select.provider-select', { 'aria-label': 'Pull request' }) as HTMLSelectElement;
@@ -177,6 +198,70 @@ function meetingForm(net: Net, preset: MeetingPreset | undefined, done: () => vo
   const busy = h('p.meeting-busy');
   const submit = h('button.btn.primary', { type: 'submit' }, '🤝 Start the meeting');
   const cancel = h('button.btn', { type: 'button', onclick: store.meeting.current ? back : done }, store.meeting.current ? '← Back' : 'Cancel');
+
+  const squadChips = h('div.meeting-squad-chips');
+  const squadPreview = h('div.meeting-squad-preview');
+  const squadPresetsRow = h(
+    'div.meeting-field.meeting-squad-presets-row',
+    {},
+    h('label', {}, '⚡ Swarm Squad Presets (1-Click Team Dispatch)'),
+    squadChips,
+    squadPreview,
+  );
+
+  const renderSquadPresets = () => {
+    squadChips.replaceChildren(
+      ...SWARM_SQUAD_PRESETS.map((sq) => {
+        const active = selectedSquad?.id === sq.id;
+        return h(
+          'button.meeting-squad-chip',
+          {
+            type: 'button',
+            class: active ? 'active' : '',
+            'aria-pressed': String(active),
+            onclick: () => {
+              selectedSquad = sq;
+              titleIn.value = sq.name;
+              about.value = buildSquadMasterPrompt(sq);
+              if (sq.squad.some((m) => m.provider === 'antigravity' || m.provider === 'agy')) {
+                provider.set?.({ provider: 'antigravity' });
+              }
+              renderSquadPresets();
+              syncOutput();
+            },
+          },
+          h('span.squad-chip-icon', {}, sq.icon),
+          h('span.squad-chip-title', {}, sq.name),
+        );
+      }),
+    );
+
+    if (!selectedSquad) {
+      squadPreview.replaceChildren(
+        h('div.squad-preview-hint', {}, '⚡ Select a preset above to load an autonomous multi-role squad recipe with pre-assigned worktrees, skills, and prompts.'),
+      );
+    } else {
+      squadPreview.replaceChildren(
+        h('div.squad-preview-header', {},
+          h('span.squad-preview-badge', {}, `${selectedSquad.icon} ${selectedSquad.name}`),
+          h('span.squad-preview-desc', {}, selectedSquad.description),
+        ),
+        h('div.squad-members-list', {},
+          ...selectedSquad.squad.map((m) =>
+            h('div.squad-member-card', {},
+              h('div.member-card-top', {},
+                h('span.member-role-tag', { class: `role-${m.role}` }, m.role.toUpperCase()),
+                h('strong.member-title', {}, m.agentName),
+                m.provider ? h('span.member-provider-tag', {}, `[${m.provider.toUpperCase()}]`) : null,
+              ),
+              h('div.member-focus', {}, m.focus),
+            ),
+          ),
+        ),
+      );
+    }
+  };
+  renderSquadPresets();
 
   const def = () => MEETING_PATTERNS[pattern];
   const slug = () => slugify(titleIn.value.trim() || about.value.trim().split('\n')[0] || 'meeting', 32);
@@ -221,6 +306,7 @@ function meetingForm(net: Net, preset: MeetingPreset | undefined, done: () => vo
     roleRow.classList.toggle('hidden', p === 'swarm');
     boundsRow.classList.toggle('hidden', p === 'swarm');
     swarmLimitRow.classList.toggle('hidden', p !== 'swarm');
+    squadPresetsRow.classList.toggle('hidden', p !== 'swarm');
     aboutLabel.textContent = p === 'swarm' ? 'Master prompt' : 'What’s it about?';
     about.placeholder = p === 'swarm' ? 'Describe the project outcome. The planner will split it into independent specialist tasks.' : 'The question to settle, or the task to do: e.g. “Should the dog use A* or a navmesh?”';
     about.setAttribute('aria-label', p === 'swarm' ? 'Master prompt' : 'What the meeting is about');
@@ -255,6 +341,7 @@ function meetingForm(net: Net, preset: MeetingPreset | undefined, done: () => vo
     'form.meeting-form',
     {},
     patterns,
+    squadPresetsRow,
     h('div.meeting-field', {}, aboutLabel, about),
     h('div.meeting-field', {}, titleIn),
     prRow,

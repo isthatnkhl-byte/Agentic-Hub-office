@@ -10,6 +10,7 @@ import { randomLook } from '../shared/avatar';
 import { ROOF } from '../shared/rooftop';
 import { DESK_BY_ID, nextFreeSeat } from '../shared/layout';
 import { isAsleep } from '../shared/status';
+import { SWARM_SQUAD_PRESETS, buildSquadMasterPrompt } from '../shared/meetings';
 import { fmtCost, fmtTokens, type AgentEffort, type AgentProvider, type FloorInfo, type MeetingSwarmTask, type SwarmTaskStatus, type WorkerInfo } from '../shared/protocol';
 import { $, clip, closeAllModals, doingNow, h, onDoingChange, onModalChange, openModal, readingNow, STATUS_LABEL, timeAgo, toast } from './ui/dom';
 import { openTerminal, openTerminalFor, routeTerminalMessage } from './ui/terminal';
@@ -379,8 +380,29 @@ function renderSwarmBanner() {
   if (!isSwarm) {
     const pastSwarm = store.meeting.past.find((p) => p.pattern === 'swarm');
     if (!pastSwarm) {
-      banner.classList.add('hidden');
-      banner.replaceChildren();
+      banner.classList.remove('hidden');
+      banner.replaceChildren(
+        h('div.lite-swarm-launch-card', {},
+          h('div.lite-swarm-launch-header', {},
+            h('span.icon', {}, '🐝'),
+            h('b', {}, 'Autonomous Swarm Squads'),
+          ),
+          h('div.lite-swarm-preset-chips', {},
+            ...SWARM_SQUAD_PRESETS.map((preset) =>
+              h('button.btn.small.preset-chip', {
+                type: 'button',
+                title: preset.tagline,
+                onclick: () => showMeeting({
+                  pattern: 'swarm',
+                  title: preset.name,
+                  prompt: buildSquadMasterPrompt(preset),
+                  squadId: preset.id,
+                }),
+              }, `${preset.icon} ${preset.name.split(' ')[0]}`),
+            ),
+          ),
+        ),
+      );
       return;
     }
     banner.classList.remove('hidden');
@@ -390,6 +412,20 @@ function renderSwarmBanner() {
         h('div.info', {},
           h('b', {}, `Last Swarm: ${pastSwarm.title}`),
           h('span.muted', {}, pastSwarm.summary),
+        ),
+        h('div.lite-swarm-preset-chips', {},
+          ...SWARM_SQUAD_PRESETS.slice(0, 3).map((preset) =>
+            h('button.btn.small.preset-chip', {
+              type: 'button',
+              title: preset.tagline,
+              onclick: () => showMeeting({
+                pattern: 'swarm',
+                title: preset.name,
+                prompt: buildSquadMasterPrompt(preset),
+                squadId: preset.id,
+              }),
+            }, `${preset.icon} ${preset.name.split(' ')[0]}`),
+          ),
         ),
         h('button.btn.small.primary', {
           type: 'button',

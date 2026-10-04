@@ -78,6 +78,10 @@ test('startServer starts an HTTP/WebSocket server and handles requests', async (
     if (serverInstance) {
       await serverInstance.shutdown();
     }
-    fs.rmSync(tempDir, { recursive: true, force: true });
+    try {
+      fs.rmSync(tempDir, { recursive: true, force: true, maxRetries: 5, retryDelay: 100 });
+    } catch {
+      // Non-fatal if Windows takes extra time releasing file handles
+    }
   }
 });

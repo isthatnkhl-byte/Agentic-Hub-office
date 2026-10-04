@@ -132,6 +132,8 @@ export interface ProviderPicker {
   effort(): AgentEffort | undefined;
   /** Reports a visible field error for an invalid nonempty OpenCode model. */
   valid(): boolean;
+  /** Sets the provider choice programmatically. */
+  set?(choice: AgentChoice): void;
 }
 
 export interface AgentFields extends ProviderPicker {
@@ -501,11 +503,17 @@ export function providerPicker(project: ProjectInfo | null, id: string, label = 
   paint();
   // The default can change while this is open; it goes once its window has closed.
   const off = store.on('prompts', () => (element.isConnected ? paint() : off()));
+  const set = (c: AgentChoice) => {
+    editing = true;
+    fields.set(c);
+    paint();
+  };
   return {
     element,
     value: () => (editing ? fields.value() : officeChoice(project).provider),
     model: () => (editing ? fields.model() : officeChoice(project).model),
     effort: () => (editing ? fields.effort() : officeChoice(project).effort),
     valid: () => !editing || fields.valid(),
+    set,
   };
 }

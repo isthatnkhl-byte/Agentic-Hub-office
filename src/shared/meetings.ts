@@ -1,7 +1,7 @@
 // The meeting room's patterns: how 2–5 workers at the table work on one question or task together.
 // The server runs them (server/meetings.ts); the client offers them when a meeting is called.
 
-import { fmtCost, fmtTokens, type Meeting, type MeetingPattern, type MeetingRecord, type SwarmRole } from './protocol.js';
+import { fmtCost, fmtTokens, type AgentProvider, type Meeting, type MeetingPattern, type MeetingRecord, type SwarmRole } from './protocol.js';
 
 export interface PatternDef {
   icon: string;
@@ -97,6 +97,177 @@ export const SWARM_ROLE_PROFILES: Record<SwarmRole, { label: string; guidance: s
   documentation: { label: 'Documentation specialist', guidance: 'Update the nearest authoritative docs and examples to match actual behavior. Verify commands and avoid documenting unimplemented guarantees.' },
   general: { label: 'General engineer', guidance: 'Follow repository instructions, reuse local abstractions, keep changes scoped, and run the narrowest relevant validation.' },
 };
+
+export const SWARM_ROLES = Object.keys(SWARM_ROLE_PROFILES) as SwarmRole[];
+
+export interface SwarmSquadMember {
+  agentName: string;
+  role: SwarmRole;
+  provider?: AgentProvider | 'agy';
+  focus: string;
+}
+
+export interface SwarmSquadPreset {
+  id: string;
+  name: string;
+  icon: string;
+  tagline: string;
+  description: string;
+  squad: readonly SwarmSquadMember[];
+  defaultMasterPrompt: string;
+}
+
+export const SWARM_SQUAD_PRESETS: readonly SwarmSquadPreset[] = [
+  {
+    id: 'fullstack',
+    name: 'Full-Stack Feature Squad',
+    icon: '🚀',
+    tagline: 'End-to-End Product Engineering',
+    description: 'Autonomous triad covering UI components, backend APIs, and end-to-end integration tests.',
+    squad: [
+      {
+        agentName: 'Backend Architect',
+        role: 'backend',
+        focus: 'Implement REST/WebSocket endpoints, data validation, domain models, and error handling.',
+      },
+      {
+        agentName: 'Frontend Designer',
+        role: 'frontend',
+        focus: 'Build responsive views, interactive state controls, accessibility, and visual styling.',
+      },
+      {
+        agentName: 'E2E & Integration QA',
+        role: 'testing',
+        focus: 'Write automated integration test suites, verify API contracts, and assert edge cases.',
+      },
+    ],
+    defaultMasterPrompt: 'Build a production feature: implement clean backend endpoints with input validation, responsive frontend UI views, and complete automated verification tests.',
+  },
+  {
+    id: 'security',
+    name: 'Security & Hardening Swarm',
+    icon: '🛡️',
+    tagline: 'Vulnerability Audit & Defense',
+    description: 'Thorough security inspection, auth boundary hardening, and regression exploit assertions.',
+    squad: [
+      {
+        agentName: 'Security Auditor',
+        role: 'security',
+        focus: 'Trace code paths for vulnerabilities, auth flaws, injection vectors, and permission bypasses.',
+      },
+      {
+        agentName: 'Defensive Systems Engineer',
+        role: 'backend',
+        focus: 'Harden authentication protocols, apply input sanitization, rate limits, and defense-in-depth patches.',
+      },
+      {
+        agentName: 'Exploit Regression Tester',
+        role: 'testing',
+        focus: 'Construct malicious payload test cases, verify token revocations, and prevent regressions.',
+      },
+    ],
+    defaultMasterPrompt: 'Conduct an end-to-end security audit: inspect API boundaries, patch authorization vulnerabilities, and write automated security regression tests.',
+  },
+  {
+    id: 'performance',
+    name: 'Performance & Optimization Swarm',
+    icon: '⚡',
+    tagline: 'Latency, Memory & Throughput Tuning',
+    description: 'Dedicated profiling, server resource optimization, render loop tuning, and concurrency stress benchmarks.',
+    squad: [
+      {
+        agentName: 'System Profiler',
+        role: 'backend',
+        focus: 'Profile server bottlenecks, reduce serialization overhead, optimize DB queries, and prevent memory leaks.',
+      },
+      {
+        agentName: 'Client Render Optimizer',
+        role: 'frontend',
+        focus: 'Tune Three.js rendering loops, minimize layout reflows, optimize bundle sizes, and cache assets.',
+      },
+      {
+        agentName: 'Benchmark & Stress Tester',
+        role: 'testing',
+        focus: 'Build high-throughput load tests, measure P99 latencies, and assert sub-100ms response targets.',
+      },
+    ],
+    defaultMasterPrompt: 'Optimize system performance: analyze latency bottlenecks, eliminate memory leaks and unnecessary re-renders, and write automated benchmark tests.',
+  },
+  {
+    id: 'antigravity',
+    name: 'Google Antigravity Autonomous Squad',
+    icon: '🪐',
+    tagline: 'Advanced Agentic Coding Pair',
+    description: 'Harnesses Google Antigravity (agy) autonomous agent reasoning, deep repo analysis, and multi-step refactoring.',
+    squad: [
+      {
+        agentName: 'AGY Architecture Lead',
+        role: 'backend',
+        provider: 'agy',
+        focus: 'Execute complex multi-file refactors using deep codebase traversal and trajectory planning.',
+      },
+      {
+        agentName: 'AGY Interface Specialist',
+        role: 'frontend',
+        provider: 'agy',
+        focus: 'Implement rich spatial UI components and interactive controls with Antigravity heuristics.',
+      },
+      {
+        agentName: 'AGY Verification Sentinel',
+        role: 'testing',
+        provider: 'agy',
+        focus: 'Run continuous verification cycles, resolve lints, and ensure 100% green test passes.',
+      },
+    ],
+    defaultMasterPrompt: 'Deploy Google Antigravity (agy) autonomous agents to analyze the repository architecture, implement the requested capability across isolated worktrees, and run automated verification.',
+  },
+  {
+    id: 'devex',
+    name: 'Documentation & DevEx Swarm',
+    icon: '📚',
+    tagline: 'API Specs, SDK Guides & Tutorial Verification',
+    description: 'Comprehensive API specifications, developer onboarding docs, and runnable SDK test examples.',
+    squad: [
+      {
+        agentName: 'Protocol & API Documenter',
+        role: 'documentation',
+        focus: 'Produce clear Markdown guides, OpenAPI specifications, and architectural diagrams.',
+      },
+      {
+        agentName: 'SDK & Tooling Engineer',
+        role: 'general',
+        focus: 'Develop ergonomic client libraries, CLI helper utilities, and developer productivity tools.',
+      },
+      {
+        agentName: 'Tutorial Assertion Tester',
+        role: 'testing',
+        focus: 'Execute every documented code snippet and installation step in isolated test environments.',
+      },
+    ],
+    defaultMasterPrompt: 'Write authoritative developer documentation and SDK examples: document all public APIs and wire messages, create quickstart guides, and verify every snippet runs cleanly.',
+  },
+] as const;
+
+export const SWARM_SQUAD_BY_ID = new Map<string, SwarmSquadPreset>(SWARM_SQUAD_PRESETS.map((p) => [p.id, p]));
+
+export function getSwarmSquad(id: string): SwarmSquadPreset | undefined {
+  return SWARM_SQUAD_BY_ID.get(id);
+}
+
+/** Formats an explicit squad master prompt combining the squad's pre-configured role matrix and optional custom objective */
+export function buildSquadMasterPrompt(preset: SwarmSquadPreset, customObjective?: string): string {
+  const objective = customObjective?.trim() || preset.defaultMasterPrompt;
+  const lines = [
+    `# Target Objective: ${preset.name}`,
+    `${objective}`,
+    '',
+    `## Recommended Autonomous Squad Composition:`,
+    ...preset.squad.map((m) => `- **${m.agentName}** [Role: ${m.role}${m.provider ? `, Provider: ${m.provider}` : ''}]: ${m.focus}`),
+    '',
+    `Planner Directive: Structure plan.json to divide this objective among these specialized roles, resolving prerequisites and isolated Git worktree chains.`,
+  ];
+  return lines.join('\n');
+}
 
 export function isMeetingPattern(v: unknown): v is MeetingPattern {
   // Own keys only: `in` would also take the prototype's (constructor, toString…), and those crash the server.

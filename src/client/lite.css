@@ -188,3 +188,47 @@ body.lite { min-height: 100dvh; background: var(--paper); -webkit-tap-highlight-
 }
 .swarm-modal-footer .grow { font-size: 12px; font-weight: 700; color: var(--muted); }
 
+/* Swarm Squad Presets (Mobile Lite) */
+.lite-swarm-launch-card {
+  background: #fff;
+  border: 2px solid var(--ink);
+  border-radius: 12px;
+  box-shadow: 0 3px 0 var(--ink);
+  padding: 12px 14px;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.lite-swarm-launch-header {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 14px;
+  font-weight: 900;
+}
+
+.lite-swarm-preset-chips {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+}
+
+.preset-chip {
+  font-size: 12px;
+  font-weight: 700;
+  padding: 4px 10px;
+  border: 1.5px solid var(--ink);
+  box-shadow: 0 1.5px 0 var(--ink);
+  background: #f8fafc;
+  cursor: pointer;
+  border-radius: 8px;
+  transition: transform 0.1s ease;
+}
+
+.preset-chip:active {
+  transform: translateY(1.5px);
+  box-shadow: none;
+}
+
+

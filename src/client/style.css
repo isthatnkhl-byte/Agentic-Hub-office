@@ -2098,3 +2098,149 @@ a.when:hover { text-decoration: underline; }
   50% { border-color: #f0883e; }
 }
 
+/* Swarm Squad Presets (3D Meeting Modal) */
+.meeting-squad-presets-row {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  background: #161b22;
+  border: 1px solid #30363d;
+  border-radius: 8px;
+  padding: 12px;
+  margin-bottom: 8px;
+}
+
+.meeting-squad-presets-row > label {
+  font-size: 12px;
+  font-weight: 700;
+  color: #58a6ff;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.meeting-squad-chips {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.meeting-squad-chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  background: #21262d;
+  border: 1px solid #30363d;
+  border-radius: 20px;
+  padding: 6px 12px;
+  font-size: 13px;
+  font-weight: 600;
+  color: #c9d1d9;
+  cursor: pointer;
+  transition: all 0.15s ease;
+}
+
+.meeting-squad-chip:hover {
+  background: #30363d;
+  border-color: #58a6ff;
+  color: #f0f6fc;
+}
+
+.meeting-squad-chip.active {
+  background: #1f6feb22;
+  border-color: #58a6ff;
+  color: #58a6ff;
+  box-shadow: 0 0 8px rgba(88, 166, 255, 0.25);
+}
+
+.meeting-squad-preview {
+  background: #0d1117;
+  border: 1px solid #21262d;
+  border-radius: 6px;
+  padding: 10px 12px;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.squad-preview-hint {
+  font-size: 12px;
+  color: #8b949e;
+  font-style: italic;
+}
+
+.squad-preview-header {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.squad-preview-badge {
+  font-size: 13px;
+  font-weight: 700;
+  color: #58a6ff;
+}
+
+.squad-preview-desc {
+  font-size: 12px;
+  color: #8b949e;
+}
+
+.squad-members-list {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  margin-top: 4px;
+}
+
+.squad-member-card {
+  display: flex;
+  flex-direction: column;
+  background: #161b22;
+  border: 1px solid #30363d;
+  border-radius: 4px;
+  padding: 6px 8px;
+  gap: 3px;
+}
+
+.member-card-top {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 12px;
+}
+
+.member-role-tag {
+  font-size: 10px;
+  font-weight: 700;
+  padding: 1px 5px;
+  border-radius: 4px;
+  background: #30363d;
+  color: #c9d1d9;
+}
+
+.member-role-tag.role-frontend { background: #388bfd33; color: #58a6ff; }
+.member-role-tag.role-backend { background: #3fb95033; color: #3fb950; }
+.member-role-tag.role-testing { background: #d2992233; color: #d29922; }
+.member-role-tag.role-security { background: #f8514933; color: #f85149; }
+.member-role-tag.role-documentation { background: #a371f733; color: #bc8cff; }
+
+.member-provider-tag {
+  font-size: 10px;
+  font-weight: 700;
+  color: #f0883e;
+  margin-left: auto;
+}
+
+.member-title {
+  color: #f0f6fc;
+}
+
+.member-focus {
+  font-size: 11px;
+  color: #8b949e;
+}
+
+
