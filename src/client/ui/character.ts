@@ -1,7 +1,7 @@
 import * as THREE from 'three';
 import { OutlineEffect } from 'three/examples/jsm/effects/OutlineEffect.js';
-import { HAIR_COLOR_NAMES, HAIR_COLORS, HAIR_STYLES, SKIN_TONES, randomLook, randomName, type Look } from '../../shared/avatar';
-import { AVATAR_COLORS, saveProfile, store, type Profile } from '../state';
+import { CHARACTER_TEMPLATES, HAIR_COLORS, SKIN_TONES, randomName, sameLook } from '../../shared/avatar';
+import { saveProfile, store, type Profile } from '../state';
 import { Person } from '../world/character';
 import { toonUnique } from '../world/toon';
 import { h, openModal } from './dom';
@@ -127,11 +127,18 @@ class Preview {
 }
 
 /**
- * The character select screen: your name, skin tone, hair and shirt, with a live preview.
+ * The character select screen: your name and one of five ready-made characters, with a live preview.
  * `first` is the one you see when you join: closing it goes in as whoever's picked so far.
  */
 export function openCharacter(first: boolean, onSave: (p: Profile) => void) {
   const pick: Profile = { ...store.profile, look: { ...store.profile.look } };
+  // Convert older freeform looks to the first template if they do not match a preset.
+  const templateLook = (template: (typeof CHARACTER_TEMPLATES)[number]) => ({ ...template.look });
+  const savedTemplate = CHARACTER_TEMPLATES.find((template) => template.color === pick.color && sameLook(template.look, pick.look));
+  if (!savedTemplate) {
+    pick.look = templateLook(CHARACTER_TEMPLATES[0]);
+    pick.color = CHARACTER_TEMPLATES[0].color;
+  }
   const canvas = h('canvas', { 'aria-label': 'Your character, drag to spin' }) as HTMLCanvasElement;
   const preview = new Preview(canvas, pick);
 
@@ -154,17 +161,11 @@ export function openCharacter(first: boolean, onSave: (p: Profile) => void) {
     input.title = 'Your account name';
   }
 
-  const skinRow = h('div.swatches', { role: 'radiogroup', 'aria-label': 'Skin tone' });
-  const styleRow = h('div.seg', { role: 'radiogroup', 'aria-label': 'Hair style' });
-  const hairRow = h('div.swatches', { role: 'radiogroup', 'aria-label': 'Hair color' });
-  const shirtRow = h('div.swatches', { role: 'radiogroup', 'aria-label': 'Shirt color' });
+  const templateList = h('div.character-templates', { role: 'group', 'aria-label': 'Choose a character' });
 
-  const swatch = (color: string, label: string, on: boolean, choose: () => void) =>
-    h('button.swatch', { type: 'button', role: 'radio', 'aria-checked': String(on), style: `background:${color}`, class: on ? 'sel' : '', 'aria-label': label, title: label, onclick: choose });
-
-  const change = (look: Partial<Look>, color?: string) => {
-    Object.assign(pick.look, look);
-    if (color) pick.color = color;
+  const change = (template: (typeof CHARACTER_TEMPLATES)[number]) => {
+    pick.look = templateLook(template);
+    pick.color = template.color;
     preview.person.setLook(pick.look);
     preview.person.setColor(pick.color);
     preview.cheer();
@@ -172,20 +173,19 @@ export function openCharacter(first: boolean, onSave: (p: Profile) => void) {
   };
 
   const paint = () => {
-    const { skin, hair, style } = pick.look;
-    skinRow.replaceChildren(...SKIN_TONES.map((c, i) => swatch(c, `Skin tone ${i + 1} of ${SKIN_TONES.length}`, i === skin, () => change({ skin: i }))));
-    styleRow.replaceChildren(
-      ...HAIR_STYLES.map((name, i) =>
-        h('button.btn', { type: 'button', role: 'radio', 'aria-checked': String(i === style), class: i === style ? 'on' : '', onclick: () => change({ style: i }) }, name),
-      ),
-    );
-    hairRow.replaceChildren(...HAIR_COLORS.map((c, i) => swatch(c, HAIR_COLOR_NAMES[i], i === hair, () => change({ hair: i }))));
-    shirtRow.replaceChildren(...AVATAR_COLORS.map((c) => swatch(c, `Shirt ${c}`, c === pick.color, () => change({}, c))));
+    const selected = CHARACTER_TEMPLATES.find((template) => template.color === pick.color && sameLook(template.look, pick.look));
+    templateList.replaceChildren(...CHARACTER_TEMPLATES.map((template) => {
+      const on = template.id === selected?.id;
+      return h(
+        'button.character-template',
+        { type: 'button', 'aria-pressed': String(on), class: on ? 'selected' : '', style: `--character-shirt:${template.color};--character-skin:${SKIN_TONES[template.look.skin]};--character-hair:${HAIR_COLORS[template.look.hair]};`, onclick: () => change(template) },
+        h('span.character-template-art', {}, h('span.character-template-hair', {}), h('span.character-template-face', {}), h('span.character-template-body', {}), h('span.character-template-mark', {}, template.mark)),
+        h('span.character-template-copy', {}, h('strong', {}, template.name), h('small', {}, template.description)),
+        on ? h('span.character-template-check', { 'aria-hidden': 'true' }, '✓') : null,
+      );
+    }));
   };
   paint();
-
-  const surprise = h('button.btn', { type: 'button', title: 'Random look' }, '🎲 Surprise me');
-  surprise.addEventListener('click', () => change(randomLook(), AVATAR_COLORS[Math.floor(Math.random() * AVATAR_COLORS.length)]));
   const save = h('button.btn.primary', { type: 'submit' }, first ? 'Enter the office 🚪' : 'Save');
   const close = h('button.btn.close', { type: 'button', 'aria-label': 'Close', title: first ? 'Skip: go in with this look (Esc)' : 'Close (Esc)' }, '✕');
 
@@ -203,17 +203,12 @@ export function openCharacter(first: boolean, onSave: (p: Profile) => void) {
         h('label', {}, 'Your name'),
         account ? input : h('div.webhook', {}, input, reroll),
         account ? h('p.setting-note', {}, `🔑 Signed in as ${account.name}, so that's your name here.`) : null,
-        h('label', {}, 'Skin tone'),
-        skinRow,
-        h('label', {}, 'Hair'),
-        styleRow,
-        h('label', {}, 'Hair color'),
-        hairRow,
-        h('label', {}, 'Shirt'),
-        shirtRow,
+        h('label', {}, 'Choose your character'),
+        h('p.character-template-hint', {}, 'Pick one of five characters. Drag the preview to see them from every angle.'),
+        templateList,
       ),
     ),
-    h('footer', {}, surprise, h('span.grow'), save),
+    h('footer', {}, h('span.grow'), save),
   ) as HTMLFormElement;
 
   let done = false;
