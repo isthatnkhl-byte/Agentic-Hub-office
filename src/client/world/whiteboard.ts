@@ -6,6 +6,9 @@ import type { Collider, Interactable } from './office';
 // The whiteboard: a rolling whiteboard on casters out on the open floor, with a marker tray. Its
 // face shows whatever everyone has drawn on it (see ui/whiteboard.ts), live.
 
+import type { MeetingStatus, MeetingSwarmTask } from '../../shared/protocol';
+import { renderSwarmDag } from './swarm-dag-render';
+
 const ALU = '#aab4be';
 const INK = '#2b2d42';
 /** The face's canvas, in pixels per meter. */
@@ -14,6 +17,15 @@ const PX = 512;
 const PAD = 40;
 const FONT = 'Nunito, ui-rounded, system-ui, sans-serif';
 
+export interface SwarmWhiteboardData {
+  title?: string;
+  status?: MeetingStatus;
+  tasks: MeetingSwarmTask[];
+  tokens?: number;
+  budget?: number;
+  cost?: number;
+}
+
 export interface WhiteboardStand {
   group: THREE.Group;
   colliders: Collider[];
@@ -21,6 +33,8 @@ export interface WhiteboardStand {
   interactable: Interactable;
   /** Puts a drawing on the face (scaled to fit), or the "come and draw" note when there's none. */
   show(drawing: HTMLCanvasElement | null): void;
+  /** Projects the live Swarm DAG execution graph when a swarm meeting is active, or null to revert to drawings. */
+  showSwarm(data: SwarmWhiteboardData | null): void;
   /** How big a drawing fills the face, in pixels. */
   fit: { width: number; height: number };
 }
@@ -87,9 +101,19 @@ export function buildWhiteboard(): WhiteboardStand {
   const interactable: Interactable = { kind: 'whiteboard', x, z: z + 1.7, radius: 2.3 };
   group.userData.interact = interactable;
 
-  const show = (drawing: HTMLCanvasElement | null) => {
+  let currentDrawing: HTMLCanvasElement | null = null;
+  let currentSwarm: SwarmWhiteboardData | null = null;
+
+  const redraw = () => {
     const W = canvas.width;
     const H = canvas.height;
+
+    if (currentSwarm && currentSwarm.tasks.length > 0) {
+      renderSwarmDag(g, W, H, currentSwarm);
+      texture.needsUpdate = true;
+      return;
+    }
+
     g.fillStyle = '#ffffff';
     g.fillRect(0, 0, W, H);
     // A faint shine across the top corner, so it reads as a glossy board from across the room.
@@ -98,11 +122,12 @@ export function buildWhiteboard(): WhiteboardStand {
     shine.addColorStop(1, 'rgba(210, 225, 240, 0)');
     g.fillStyle = shine;
     g.fillRect(0, 0, W, H);
-    if (drawing) {
-      const s = Math.min((W - PAD * 2) / drawing.width, (H - PAD * 2) / drawing.height);
-      const w = drawing.width * s;
-      const h = drawing.height * s;
-      g.drawImage(drawing, (W - w) / 2, (H - h) / 2, w, h);
+
+    if (currentDrawing) {
+      const s = Math.min((W - PAD * 2) / currentDrawing.width, (H - PAD * 2) / currentDrawing.height);
+      const w = currentDrawing.width * s;
+      const h = currentDrawing.height * s;
+      g.drawImage(currentDrawing, (W - w) / 2, (H - h) / 2, w, h);
     } else {
       g.fillStyle = '#b8c0c8';
       g.textAlign = 'center';
@@ -114,7 +139,18 @@ export function buildWhiteboard(): WhiteboardStand {
     }
     texture.needsUpdate = true;
   };
+
+  const show = (drawing: HTMLCanvasElement | null) => {
+    currentDrawing = drawing;
+    redraw();
+  };
+
+  const showSwarm = (data: SwarmWhiteboardData | null) => {
+    currentSwarm = data;
+    redraw();
+  };
+
   show(null);
 
-  return { group, colliders, interactable, show, fit: { width: canvas.width - PAD * 2, height: canvas.height - PAD * 2 } };
+  return { group, colliders, interactable, show, showSwarm, fit: { width: canvas.width - PAD * 2, height: canvas.height - PAD * 2 } };
 }
