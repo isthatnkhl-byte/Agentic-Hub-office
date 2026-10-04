@@ -60,7 +60,7 @@ function activeWindow(s: ScreenState, width: number, height: number, preferredRo
 }
 
 /** Paints a terminal screen onto a canvas. Shared by the 3D laptops and the HUD previews. */
-export function paintScreen(ctx: CanvasRenderingContext2D, w: number, h: number, s: ScreenState | undefined, placeholder?: string, zoomRows = 0) {
+export function paintScreen(ctx: CanvasRenderingContext2D, w: number, h: number, s: ScreenState | undefined, placeholder?: string, zoomRows = 0, alertMessage?: string) {
   ctx.fillStyle = TERM_THEME.background;
   ctx.fillRect(0, 0, w, h);
   if (!s) {
@@ -115,6 +115,24 @@ export function paintScreen(ctx: CanvasRenderingContext2D, w: number, h: number,
       }
       x += len;
     }
+  }
+
+  // Attention banner when agent requires approval or user input
+  if (alertMessage) {
+    const bannerH = Math.max(32, Math.round(h * 0.08));
+    ctx.fillStyle = '#ef4444';
+    ctx.fillRect(0, 0, w, bannerH);
+    ctx.fillStyle = '#ffffff';
+    ctx.font = `800 ${Math.round(bannerH * 0.58)}px ui-monospace, Menlo, monospace`;
+    ctx.textAlign = 'center';
+    ctx.textBaseline = 'middle';
+    ctx.fillText(`⚠️ ${alertMessage.toUpperCase()}`, w / 2, bannerH / 2);
+    ctx.textAlign = 'left';
+
+    // Glowing border around screen
+    ctx.strokeStyle = '#ef4444';
+    ctx.lineWidth = 8;
+    ctx.strokeRect(4, 4, w - 8, h - 8);
   }
 }
 
