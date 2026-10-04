@@ -10,10 +10,8 @@ import type { CarSeat, CarState } from './garage.js';
 import type { JukeboxState } from './jukebox.js';
 
 export type BarGame = 'darts' | 'axe';
-export interface BallState {
-  holder?: string;
-  shot?: { x: number; y: number; z: number; vx: number; vy: number; vz: number; t: number };
-}
+import type { BallState, BallShot } from './hoop.js';
+export type { BallState, BallShot };
 import type { CustomMap } from './maps/index.js';
 import type { PromptId } from './prompts.js';
 import type { DrinkId } from './rooftop.js';
