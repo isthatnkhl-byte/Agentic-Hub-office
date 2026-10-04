@@ -59,8 +59,25 @@ function activeWindow(s: ScreenState, width: number, height: number, preferredRo
   return { top, rows, cols, first: contentFirst, last: contentLast };
 }
 
+function drawAlertBanner(ctx: CanvasRenderingContext2D, w: number, h: number, alertMessage: string) {
+  const bannerH = Math.max(32, Math.round(h * 0.08));
+  ctx.fillStyle = '#ef4444';
+  ctx.fillRect(0, 0, w, bannerH);
+  ctx.fillStyle = '#ffffff';
+  ctx.font = `800 ${Math.round(bannerH * 0.58)}px ui-monospace, Menlo, monospace`;
+  ctx.textAlign = 'center';
+  ctx.textBaseline = 'middle';
+  ctx.fillText(`⚠️ ${alertMessage.toUpperCase()}`, w / 2, bannerH / 2);
+  ctx.textAlign = 'left';
+
+  // Glowing border around screen
+  ctx.strokeStyle = '#ef4444';
+  ctx.lineWidth = 8;
+  ctx.strokeRect(4, 4, w - 8, h - 8);
+}
+
 /** Paints a terminal screen onto a canvas. Shared by the 3D laptops and the HUD previews. */
-export function paintScreen(ctx: CanvasRenderingContext2D, w: number, h: number, s: ScreenState | undefined, placeholder?: string, zoomRows = 0) {
+export function paintScreen(ctx: CanvasRenderingContext2D, w: number, h: number, s: ScreenState | undefined, placeholder?: string, zoomRows = 0, alertMessage?: string) {
   ctx.fillStyle = TERM_THEME.background;
   ctx.fillRect(0, 0, w, h);
   if (!s) {
@@ -70,6 +87,7 @@ export function paintScreen(ctx: CanvasRenderingContext2D, w: number, h: number,
     ctx.textBaseline = 'middle';
     ctx.fillText(placeholder ?? 'booting…', w / 2, h / 2);
     ctx.textAlign = 'left';
+    if (alertMessage) drawAlertBanner(ctx, w, h, alertMessage);
     return;
   }
   const pad = w * 0.02;
@@ -116,6 +134,9 @@ export function paintScreen(ctx: CanvasRenderingContext2D, w: number, h: number,
       x += len;
     }
   }
+
+  // Attention banner when agent requires approval or user input
+  if (alertMessage) drawAlertBanner(ctx, w, h, alertMessage);
 }
 
 export class Laptop {
@@ -128,6 +149,7 @@ export class Laptop {
   private paintedAt = 0;
   private openT = 0;
   private placeholder = 'booting…';
+  private alertText: string | null = null;
   /** Anything else of its own to free (the tome's page). */
   private owned: THREE.Material[] = [];
 
@@ -198,6 +220,12 @@ export class Laptop {
     this.drawnVersion = -2;
   }
 
+  setAlert(text: string | null) {
+    if (text === this.alertText) return;
+    this.alertText = text;
+    this.drawnVersion = -2;
+  }
+
   /** `distance` to the camera throttles repaints: far-away laptops refresh rarely. */
   update(dt: number, screen: ScreenState | undefined, distance = 0) {
     if (this.openT < 1) this.setLid(Math.min(1, this.openT + dt * 1.6));
@@ -207,7 +235,7 @@ export class Laptop {
     if (version !== this.drawnVersion && (now - this.paintedAt > every || this.drawnVersion < 0)) {
       this.paintedAt = now;
       this.drawnVersion = version;
-      paintScreen(this.ctx, this.canvas.width, this.canvas.height, screen, this.placeholder, 22);
+      paintScreen(this.ctx, this.canvas.width, this.canvas.height, screen, this.placeholder, 22, this.alertText ?? undefined);
       this.texture.needsUpdate = true;
     }
   }

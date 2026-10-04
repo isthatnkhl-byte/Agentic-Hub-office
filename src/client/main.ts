@@ -2147,6 +2147,7 @@ function syncWorkers() {
     if (deskDef) sound.setTyping(w.id, deskDef.x, deskDef.z, w.status === 'working' && (!w.action || w.action === 'edit'));
     const again = w.kind === 'shell' ? 'restart' : 'resume';
     v.laptop.setPlaceholder(w.lost ? `🌿 ${w.name}'s worktree was deleted — press E to fix it` : w.status === 'offline' ? `💤 ${w.name} is asleep — press R to ${again}` : w.status === 'exited' ? `${w.name} exited` : 'booting…');
+    v.laptop.setAlert(w.status === 'needs_input' ? 'Approval / Input Needed' : null);
   }
   for (const [id, v] of workerViews) {
     if (store.workers.has(id)) continue;
@@ -2166,6 +2167,18 @@ function syncWorkers() {
     workerViews.delete(id);
   }
   arrangeSeats();
+  const workerBadges: Record<string, { name: string; role?: string; status?: string; color?: string }> = {};
+  for (const w of store.workers.values()) {
+    const card = meetingCard(w);
+    const role = card ? `🐝 ${card.name}` : w.task?.name ? w.task.name : w.provider === 'antigravity' ? '🪐 Antigravity' : w.kind === 'shell' ? '💻 Shell' : undefined;
+    workerBadges[w.deskId] = {
+      name: w.name,
+      role,
+      status: w.status,
+      color: w.color,
+    };
+  }
+  office.signs.setWorkers(workerBadges, (d) => deskBuilt(d, officeWing()));
   // Whoever's waiting on someone lines up for the throne, the one who's waited longest first.
   court?.line(waitingInOrder(store.workers.values()).filter(inCourt).map((w) => w.id));
   renderWorkers((id) => openWorkerTerminal(id), hireNearestDesk);
@@ -2309,6 +2322,22 @@ function syncPlan() {
 store.on('floorPlan', syncPlan);
 // A worker at the meeting table shows its role and round over its head (see meetingCard).
 store.on('meeting', syncWorkers);
+function syncMeetingWhiteboard() {
+  const m = store.meeting.current;
+  if (m?.pattern === 'swarm' && m.swarmTasks && m.swarmTasks.length > 0) {
+    office.whiteboard.showSwarm({
+      title: m.title,
+      status: m.status,
+      tasks: m.swarmTasks,
+      tokens: m.tokens,
+      budget: m.budget,
+      cost: m.cost,
+    });
+  } else {
+    office.whiteboard.showSwarm(null);
+  }
+}
+store.on('meeting', syncMeetingWhiteboard);
 // A worker's bubble shows whether it has a pull request open (green) or merged (purple: send it home).
 const paintPrs = () => {
   for (const [id, v] of workerViews) {
