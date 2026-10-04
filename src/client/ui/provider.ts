@@ -99,8 +99,8 @@ export function providerUsageNote(provider: AgentProvider): string {
   if (provider === 'codex') return 'Review Office hooks in /hooks to enable tracking. Codex reports root-session tokens; subagents are excluded and cost is unavailable.';
   if (provider === 'grok') return 'Grok spend is not metered by the office; token totals stay in the worker terminal.';
   if (provider === 'muse') return 'Muse spend is not metered by the office; token totals stay in the worker terminal.';
-  if (provider === 'dsh') return 'DeepSeek Harness reports context usage over ACP after its first turn; cost may be unavailable.';
-  if (provider === 'gemini' || provider === 'openrouter' || provider === 'api' || provider === 'antigravity') return 'Custom API usage is not tracked unless the provider reports it back to the office.';
+  if (provider === 'antigravity') return 'Google Antigravity CLI reports active subagent tokens, reasoning trajectories and autonomous skill executions.';
+  if (provider === 'gemini' || provider === 'openrouter' || provider === 'api') return 'Custom API usage is not tracked unless the provider reports it back to the office.';
   if (provider === 'custom') return 'Usage is untracked unless compatible Claude Code hooks report it.';
   return 'OpenCode reports model/provider estimates; they are not billing, and arrive after the first report.';
 }
