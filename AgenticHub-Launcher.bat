@@ -3,7 +3,7 @@ setlocal enabledelayedexpansion
 title Agentic Hub Office
 
 echo ========================================================
-echo               Starting Agentic Hub Office...
+echo            Starting Agentic Hub Office...
 echo   The Spatial 3D Multi-Agent Collaborative Workspace
 echo ========================================================
 echo.
@@ -18,7 +18,7 @@ if %errorlevel% neq 0 (
     exit /b 1
 )
 
-:: Set working directory to this script's directory
+:: Set working directory
 set "APP_DIR=%~dp0"
 
 :: Set default port and password
@@ -27,11 +27,11 @@ set "PASSWORD=dev"
 if not "%~1"=="" set "PORT=%~1"
 if not "%~2"=="" set "PASSWORD=%~2"
 
-echo [1/3] Checking build distribution...
-if not exist "%APP_DIR%dist\public" (
-    echo Building Agentic Hub Office for first launch...
+echo [1/3] Checking build bundles...
+if not exist "%APP_DIR%dist" (
+    echo Building Agentic Hub for first launch...
     pushd "%APP_DIR%"
-    call npm.cmd run build
+    call npm run build
     popd
 )
 
@@ -59,7 +59,6 @@ echo.
 echo ========================================================
 echo   Agentic Hub is now running!
 echo   Local Address : http://localhost:%PORT%
-echo   2D Lite Mode  : http://localhost:%PORT%/lite.html
 echo   Default Pass  : %PASSWORD%
 echo ========================================================
 echo (Keep this window open or minimize it while using Agentic Hub)

@@ -1,6 +1,6 @@
 @echo off
 setlocal enabledelayedexpansion
-title Agentic Hub - Global Multiplayer
+title Agentic Hub Office - Global Multiplayer
 
 echo ========================================================
 echo        Starting Agentic Hub in GLOBAL MULTIPLAYER Mode
