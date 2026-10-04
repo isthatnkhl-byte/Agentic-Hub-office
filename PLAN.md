@@ -367,4 +367,31 @@ Developer 1 establishes the entire backend core orchestration engine, multi-prov
      - `tests/swarm-plan.test.ts`
      - `tests/worktrees.test.ts`
 
+---
+
+### Phase 3 (Developer 2): Spatial Swarm DAG Whiteboard Projection, In-World Laptop Attention Alerts, Dynamic Desk Role Turnovers & Multi-Provider Polish 🚀 (Delivered & Verified)
+
+Developer 2 delivers the full in-world spatial projection of the Autonomous Swarm DAG, dynamic 3D floating role badges with automatic desk turnover, 3D laptop terminal alert banners, and multi-provider polish:
+
+#### Deliverables & Implementation Tasks:
+1. **Dynamic Swarm Whiteboard & Task DAG 3D Projection (`src/client/world/swarm-dag-render.ts`, `src/client/world/whiteboard.ts`, `src/client/world/meeting.ts`)**:
+   - Built procedural topological DAG layout engine (`computeDagLayout`) that arranges swarm tasks into dependency layers, calculates non-overlapping card coordinates, and plots curved directed bezier arrows with arrowheads.
+   - Built high-fidelity canvas renderer (`renderSwarmDag`) featuring dark/light corporate whiteboard styling, real-time progress bar (`N/M Tasks · %`), status badges, color-coded role themes (`frontend`, `backend`, `testing`, `security`, `documentation`, `general`), and live swarm telemetry (DAG nodes, active/completed, token spend/budget).
+   - In-world 3D rolling whiteboard (`WhiteboardStand.showSwarm`) dynamically projects the live Swarm DAG when a swarm meeting is active, falling back to collaborative drawing when idle.
+   - Conference room back-wall board (`MeetingBoardTexture`) automatically renders the rich Swarm DAG graph when `m.pattern === 'swarm'`.
+2. **Dynamic 3D Floating Role Badges & Automatic Desk Turnovers (`src/client/world/desksigns.ts`, `src/client/main.ts`)**:
+   - Upgraded ceiling desk signs (`DeskSigns.setWorkers`) to dynamically display active agent role profiles (e.g. `🐝 Backend Architect`, `🪐 Antigravity Specialist`, `💻 Shell`), worker name, and real-time status icons (`⌨️ Working`, `❗ Needs Input`, `✅ Done`).
+   - Implemented desk turnover restoration: when an agent finishes and vacates the desk (`kill('keep')`), the sign immediately and cleanly reverts to the room's base floorplan label.
+3. **In-World 3D Laptop Attention Highlighting (`src/client/world/laptop.ts`, `src/client/main.ts`)**:
+   - Added high-visibility warning banner (`⚠️ APPROVAL / INPUT NEEDED`) and glowing borders to the 3D laptop screen canvas texture whenever an agent transitions to `needs_input`.
+   - Alerts the player in 3D first-person view across the office floor before they open the takeover modal.
+4. **Google Antigravity (`agy`) Provider Polish (`src/client/ui/provider.ts`)**:
+   - Enhanced provider picker, descriptions, and telemetry notes for Google Antigravity CLI autonomous tools and reasoning trajectories.
+5. **Comprehensive Automated Verification (184 / 184 Passing Tests)**:
+   - Added `tests/swarm-whiteboard.test.ts` (DAG topological layer layout, cycle tolerance, theme completeness).
+   - Added `tests/desksigns.test.ts` (desk sign hanging, worker role overrides, desk turnover reset).
+   - Added `tests/laptop.test.ts` (laptop lid animations, alert banner rendering, placeholder state).
+   - Verified 184 / 184 tests pass across all client 3D, UI, and server orchestration subsystems.
+
+
 
