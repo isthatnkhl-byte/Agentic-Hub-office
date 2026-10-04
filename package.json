@@ -19,8 +19,7 @@
     "build:server": "tsc -p tsconfig.server.json",
     "typecheck": "tsc -p tsconfig.server.json --noEmit && tsc -p tsconfig.client.json --noEmit",
     "start": "node bin/agent-office.js",
-    "share": "node bin/agent-office.js --host 0.0.0.0 --port 4600 --password dev --share",
-    "prepare": "npm run build"
+    "share": "node bin/agent-office.js --host 0.0.0.0 --port 4600 --password dev --share"
   },
   "engines": {
     "node": ">=20"

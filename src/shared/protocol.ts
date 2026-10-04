@@ -1,15 +1,19 @@
 // Wire protocol between browser and server. Every WebSocket frame is one JSON object.
 
 import type { Look } from './avatar.js';
-import type { BarGame } from './bargames.js';
 import type { CabinetFrame, CabinetState, CabinetView } from './cabinet.js';
 import type { DecorPlacement, Decoration } from './decor.js';
 import type { DogState } from './dog.js';
 import type { FloorPlan } from './floorplan.js';
 import type { EmoteId } from './emotes.js';
 import type { CarSeat, CarState } from './garage.js';
-import type { BallState } from './hoop.js';
 import type { JukeboxState } from './jukebox.js';
+
+export type BarGame = 'darts' | 'axe';
+export interface BallState {
+  holder?: string;
+  shot?: { x: number; y: number; z: number; vx: number; vy: number; vz: number; t: number };
+}
 import type { CustomMap } from './maps/index.js';
 import type { PromptId } from './prompts.js';
 import type { DrinkId } from './rooftop.js';

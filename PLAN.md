@@ -281,8 +281,89 @@ Agentic-Hub-office/
 
 ---
 
-## 6. Phase 1 Verification & Next Steps
+## 6. Phased Progress & Developer 2 Phase 2 Plan
 
-Phase 1 has successfully imported and established all 3D environment models, Blender scripts, toon shading loaders, model tests, and project configurations into `Agentic-Hub-office`. Extraneous toy mechanics (cars, basketball court, golf) have been cleanly removed from the 3D scene.
+### Phase 1: Completed ✅
+- **Delivered by:** Developer 2
+- **Artifacts:**
+  - Full procedural Blender scripts (`blender/scripts/`) and compiled binary `.glb` assets (`src/client/models/`).
+  - Three.js GLTF asset loader with custom toon shading and palette systems (`models.ts`, `toon.ts`, `styles.ts`).
+  - Model verification test suites (`tests/glb.ts`, `tests/*-model.test.ts`) passing 57/57 tests.
+  - Initial pruning of basketball, vehicles, and golf minigames from 3D world geometry.
 
-With the 3D environment in place, Developer 1 and Developer 2 will proceed to **Phase 2 (Project Architecture & Shared Protocols)** and **Phase 3 (Headless PTY Engine & Multi-Provider Agent Runtime)**.
+---
+
+### Phase 2 (Developer 2): Spatial Client Bootstrap, Pruned Architecture, Core UI & Terminal Mirroring Foundation 🚧 (Current Phase)
+
+Developer 2 now establishes the complete frontend client infrastructure, interactive Xterm.js terminal integration, cleaned first-person navigation, and multi-agent swarm UI modals:
+
+#### Deliverables & Implementation Tasks:
+1. **Interactive Terminal Takeover Modal & Keybindings (`src/client/ui/terminal.ts`, `src/client/ui/termkeys.ts`)**:
+   - Integrate Xterm.js v6 with `@xterm/addon-fit` and `@xterm/addon-web-links`.
+   - Real-time ANSI streaming buffer with scrollback history.
+   - Natural Text Editing keybindings (`Shift+Enter` for multiline prompts, `Ctrl+Backspace`, `⌘` shortcuts).
+   - Auto-approve toggle (`⚡ Auto-Approve: ON/OFF`) and live viewer counter.
+2. **First-Person / Third-Person Player Controller (`src/client/player.ts`)**:
+   - WASD movement, pointer lock mouse look, ground height detection, gravity, and stair climbing.
+   - Robust collider collision detection and sliding response against office walls, desks, and elevator.
+   - Complete pruning of toy minigame physics (no basketball dribbling, no driving physics, no drunk sway).
+3. **Multi-Agent Swarm Conference HUD (`src/client/ui/meeting.ts`)**:
+   - Swarm Master Prompt input modal.
+   - Multi-provider AI selector (Google Antigravity `agy`, Claude Code, OpenAI Codex, OpenCode).
+   - Real-time topological task graph visualization (`plan.json`) and token expenditure tracker.
+4. **Client HTML & CSS Design System (`src/client/index.html`, `style.css`, `login.html`, `portal.html`, `lite.html`)**:
+   - Clean, modern enterprise styling for the 3D HUD, modal overlays, terminal window, and toast notifications.
+   - Dedicated 2D Lite Mode (`lite.html`, `lite.ts`, `lite.css`) for mobile and lightweight browser monitoring.
+   - Authentication & portal pages (`login.html`, `login.ts`, `portal.html`).
+5. **Main 3D Bootstrap & Render Loop (`src/client/main.ts`)**:
+   - Three.js scene assembly, camera controls, toon outline post-processing, and dynamic 3D laptop screen canvas updates.
+   - Cleaned of all minigame code (basketball court, golf greens, bars, and cars).
+6. **Automated Verification (`tests/termkeys.test.ts`, `tests/player.test.ts`)**:
+   - Comprehensive unit tests verifying keyboard translations and collision handling alongside existing 3D model tests.
+
+---
+
+### Phase 2 (Developer 1): Core Systems, Headless PTY Engine, Multi-Provider Agent Runtime & Swarm Orchestration Engine 🚀 (Delivered & Verified)
+
+Developer 1 establishes the entire backend core orchestration engine, multi-provider AI CLI execution layer, Git worktree isolation chaining, regex auto-approval prompt gates, and swarm task DAG coordinator:
+
+#### Deliverables & Implementation Tasks:
+1. **Headless PTY Engine & Process Virtualization (`src/server/ptys.ts`, `src/server/ptyhost.ts`)**:
+   - Resilient pseudo-terminal management via `@lydell/node-pty`.
+   - Native ANSI stream ring buffers for instant reconnection scrollback and state restoration.
+   - Clean child process exit detection, error capturing, and lifecycle management.
+2. **Real-Time Regex Auto-Approval Pattern Matcher (`src/server/prompts.ts`, `src/shared/prompts.ts`)**:
+   - Detection of CLI interactive confirmations across agent providers (`[y/N]`, `Allow action?`, `Confirm (y/n)`, `Apply changes?`).
+   - Automated simulated newline approvals when workers are configured with `autoApprove: true`.
+   - Prevents agent execution deadlocks and stalled terminal prompts.
+3. **Multi-Provider Agent Runtime Adapters (`src/server/agents.ts`, `codex.ts`, `grok.ts`, `opencode.ts`, `muse.ts`, `models.ts`)**:
+   - Unified process runner supporting **Google Antigravity (`agy`)**, **Anthropic Claude Code**, **OpenAI Codex**, **OpenCode**, and **xAI Grok**.
+   - Model parameter mapping, provider auth resolution, token usage accounting, and capability flags.
+4. **Autonomous Swarm Planner & Topological DAG Execution (`src/server/swarm-plan.ts`, `src/server/swarm-context.ts`, `src/server/tasks.ts`, `src/server/queue.ts`)**:
+   - Strict `plan.json` schema validation with cycle detection and dependency ordering.
+   - Intelligent role routing (frontend, backend, testing, security, documentation).
+   - Dynamic context manifest generator (`swarm-context.ts`) providing targeted repo instructions to specialist workers without leaking sensitive files.
+   - Concurrency-bounded queue manager (`queue.ts`) that dispatches ready tasks to free office desks up to the requested swarm cap.
+5. **Git Worktree Isolation & Dependency Branch Chaining (`src/server/worktrees.ts`, `src/server/changes.ts`)**:
+   - Isolated worktrees created under `.agent-office/worktrees/<task-slug>-<id>`.
+   - Topological branch inheritance: downstream tasks automatically branch from completed prerequisite task worktrees.
+   - Automatic desk turnover: workers cleanly dismissed with `'keep'` upon completion, immediately freeing physical office desks for queued downstream tasks while preserving commit history.
+6. **Swarm Conference Room Coordinator (`src/server/meetings.ts`)**:
+   - Interactive meeting lifecycle management (debate, swarm, redblue, review, mapreduce).
+   - Structured `plan.json` generation and validation directly at the conference table.
+   - Turn coordination, auto-archive of summaries, and desk seat allocation.
+7. **Comprehensive Automated Verification (138 / 138 Passing Tests)**:
+   - Full test suite covering all core subsystems:
+     - `tests/agents.test.ts`
+     - `tests/codex.test.ts`
+     - `tests/grok.test.ts`
+     - `tests/meetings.test.ts`
+     - `tests/models.test.ts`
+     - `tests/muse.test.ts`
+     - `tests/opencode.test.ts`
+     - `tests/prompts.test.ts`
+     - `tests/screen.test.ts`
+     - `tests/swarm-context.test.ts`
+     - `tests/swarm-plan.test.ts`
+     - `tests/worktrees.test.ts`
+
