@@ -10,7 +10,7 @@ import { randomLook } from '../shared/avatar';
 import { ROOF } from '../shared/rooftop';
 import { DESK_BY_ID, nextFreeSeat } from '../shared/layout';
 import { isAsleep } from '../shared/status';
-import type { AgentEffort, AgentProvider, FloorInfo, WorkerInfo } from '../shared/protocol';
+import { fmtCost, fmtTokens, type AgentEffort, type AgentProvider, type FloorInfo, type MeetingSwarmTask, type SwarmTaskStatus, type WorkerInfo } from '../shared/protocol';
 import { $, clip, closeAllModals, doingNow, h, onDoingChange, onModalChange, openModal, readingNow, STATUS_LABEL, timeAgo, toast } from './ui/dom';
 import { openTerminal, openTerminalFor, routeTerminalMessage } from './ui/terminal';
 import { openChanges, openChangesFor, routeChangesMessage } from './ui/changes';
@@ -23,6 +23,9 @@ import { openMeeting, type MeetingPreset } from './ui/meeting';
 import { openSignIns } from './ui/signins';
 import { openInviteModal } from './ui/invite';
 import { syncWorkflow, routeSyncMessage } from './ui/sync';
+import { openWhiteboard, routeWhiteboardMessage } from './ui/whiteboard';
+import { openSwarmDagModal } from './ui/swarm-dag-modal';
+import { STATUS_THEMES } from './world/swarm-dag-render';
 import { modelBadge, providerLabel } from './ui/provider';
 import { byUrgency, waitingInOrder, waitingLabel } from './nextup';
 import { askNotifyPermission, DesktopNotifier, notifyPermission, waitingOnSomeone } from './notify';
@@ -53,6 +56,7 @@ net.onMessage((msg) => {
   routePullMessage(msg);
   routeWorktreeMessage(msg);
   routeSyncMessage(msg);
+  routeWhiteboardMessage(msg, net);
   switch (msg.t) {
     case 'welcome': {
       // Back from a restart on another version: this page's code is stale, so load the new one.
@@ -354,6 +358,121 @@ $('btn-queue').addEventListener('click', () => openQueue(net, { openTerminal: op
 $('btn-new').addEventListener('click', () => sendToWorker('✨ New task'));
 $('btn-sync')?.addEventListener('click', () => syncWorkflow(net));
 $('btn-invite')?.addEventListener('click', () => openInviteModal(net));
+$('btn-whiteboard')?.addEventListener('click', () => openWhiteboard(net));
+$('btn-swarm')?.addEventListener('click', () => {
+  const current = store.meeting.current;
+  if (current && (current.pattern === 'swarm' || (current.swarmTasks && current.swarmTasks.length > 0))) {
+    openSwarmDagModal(current, net, {
+      openTerminal: openWorker,
+      openMeeting: () => showMeeting(),
+    });
+  } else {
+    showMeeting({ pattern: 'swarm' });
+  }
+});
+
+function renderSwarmBanner() {
+  const banner = $('swarm-banner');
+  const m = store.meeting.current;
+  const isSwarm = m && (m.pattern === 'swarm' || (m.swarmTasks && m.swarmTasks.length > 0));
+
+  if (!isSwarm) {
+    const pastSwarm = store.meeting.past.find((p) => p.pattern === 'swarm');
+    if (!pastSwarm) {
+      banner.classList.add('hidden');
+      banner.replaceChildren();
+      return;
+    }
+    banner.classList.remove('hidden');
+    banner.replaceChildren(
+      h('div.lite-swarm-past', {},
+        h('span.icon', {}, '🐝'),
+        h('div.info', {},
+          h('b', {}, `Last Swarm: ${pastSwarm.title}`),
+          h('span.muted', {}, pastSwarm.summary),
+        ),
+        h('button.btn.small.primary', {
+          type: 'button',
+          onclick: () => showMeeting({ pattern: 'swarm' }),
+        }, '✨ New Swarm'),
+      ),
+    );
+    return;
+  }
+
+  banner.classList.remove('hidden');
+  const tasks = m.swarmTasks ?? [];
+  const total = tasks.length;
+  const done = tasks.filter((t) => t.status === 'done').length;
+  const running = tasks.filter((t) => t.status === 'running').length;
+  const queued = tasks.filter((t) => t.status === 'queued').length;
+  const blocked = tasks.filter((t) => t.status === 'blocked').length;
+  const failed = tasks.filter((t) => t.status === 'failed').length;
+  const pct = total > 0 ? Math.round((done / total) * 100) : 0;
+
+  const statusTheme = STATUS_THEMES[m.status as SwarmTaskStatus] ?? { label: m.status.toUpperCase(), icon: '⚡', bg: '#f1f5f9', ink: '#334155' };
+
+  const progressBar = h('div.lite-swarm-bar', {},
+    h('div.lite-swarm-bar-fill', {
+      style: `width: ${pct}%; background: ${pct === 100 ? '#16a34a' : pct > 60 ? '#22c55e' : '#eab308'};`,
+    }),
+  );
+
+  const pills = [
+    h('span.pill.done', {}, `✅ ${done} Done`),
+    running > 0 ? h('span.pill.working', {}, `⌨️ ${running} Running`) : null,
+    queued > 0 ? h('span.pill', {}, `⏳ ${queued} Queued`) : null,
+    blocked > 0 ? h('span.pill', { style: 'background:#f1f5f9;color:#64748b' }, `🔒 ${blocked} Blocked`) : null,
+    failed > 0 ? h('span.pill.needs_input', {}, `❌ ${failed} Failed`) : null,
+  ].filter(Boolean);
+
+  const metaItems = [
+    `${fmtTokens(m.tokens)} / ${fmtTokens(m.budget)} tokens`,
+    m.costKnown && m.cost ? fmtCost(m.cost) : null,
+    m.swarmLimit ? `max ${m.swarmLimit} concurrent` : null,
+  ].filter(Boolean);
+
+  const card = h('div.lite-swarm-card', { class: m.status },
+    h('div.lite-swarm-header', {},
+      h('div.title-row', {},
+        h('span.badge', {}, '🐝 Autonomous Swarm'),
+        h('span.pill', { class: m.status }, `${statusTheme.icon} ${m.status.toUpperCase()}`),
+        h('span.pct', {}, `${done}/${total} Tasks (${pct}%)`),
+      ),
+      h('h3.title', { title: m.prompt }, m.title || 'Swarm Task Execution'),
+    ),
+    progressBar,
+    h('div.lite-swarm-details', {},
+      h('div.pills-row', {}, ...pills),
+      h('div.meta-row', {}, metaItems.join(' · ')),
+    ),
+    h('div.lite-swarm-actions', {},
+      h('button.btn.primary', {
+        type: 'button',
+        onclick: () => openSwarmDagModal(m, net, {
+          openTerminal: openWorker,
+          openMeeting: () => showMeeting(),
+        }),
+      }, '📊 View Swarm DAG'),
+      h('button.btn', {
+        type: 'button',
+        onclick: () => showMeeting(),
+      }, '🤝 Conference Room'),
+      m.status === 'running'
+        ? h('button.btn', {
+            type: 'button',
+            onclick: () => {
+              if (confirm('Stop the swarm meeting? Active workers will finish their current command and exit.')) {
+                net.send({ t: 'meeting.stop' });
+              }
+            },
+          }, '⛔ Stop')
+        : null,
+    ),
+  );
+
+  banner.replaceChildren(card);
+}
 
 function renderNav() {
   const count = (id: string, n: number) => ($(id).querySelector('.n')!.textContent = n ? String(n) : '');
@@ -364,6 +483,10 @@ function renderNav() {
 store.on('issues', renderNav);
 store.on('pulls', renderNav);
 store.on('queue', renderNav);
+store.on('meeting', () => {
+  renderSwarmBanner();
+  renderNav();
+});
 
 // ---- What you have open, for the others (see PeerInfo.doing) -----------------------------------
 let doingSent: string | undefined;
