@@ -426,6 +426,30 @@ Developer 2 delivers the full 2D mobile Swarm DAG monitoring experience, collabo
    - TypeScript compiles cleanly with 0 type errors across server and client (`tsc -p tsconfig.server.json --noEmit && tsc -p tsconfig.client.json --noEmit`).
    - Vite client production bundle builds cleanly.
 
+---
 
+### Phase 3 (Developer 1): Production Server Runtime, Standalone Executable CLI Launcher & Multi-Floor Daemon 🚀 (Delivered & Verified)
 
+Developer 1 delivers the production HTTP/WebSocket server runtime daemon, complete configuration parser, authentication engine, standalone executable CLI launcher (`bin/agent-office.js`), and full integration testing:
 
+#### Deliverables & Implementation Tasks:
+1. **Production HTTP & WebSocket Server Runtime (`src/server/server.ts`, `src/server/cli.ts`)**:
+   - Integrated full standalone Node.js HTTP/WebSocket server handling dynamic API requests, static client asset distribution, and real-time state synchronization.
+   - Built authentication and session management subsystem (`src/server/auth.ts`, `src/server/accounts.ts`, `src/server/signins.ts`) with scrypt password verification, one-time claim tokens, and secure session cookies.
+   - Multi-project floor life-cycle coordination (`src/server/building.ts`, `src/server/floor.ts`, `src/server/floorplan.ts`, `src/server/maps.ts`, `src/server/theme.ts`, `src/server/sky.ts`).
+   - Worker supervision and multi-floor lifecycle management (`src/server/workers.ts`, `src/server/office-workers.ts`, `src/server/leave-on-merge.ts`).
+   - Tailnet edge tunneling and worker service proxying (`src/server/tailnet.ts`, `src/server/relay.ts`, `src/server/services.ts`).
+   - Spend telemetry, token ledger tracking, and budget safety enforcement (`src/server/usage.ts`, `src/server/limits.ts`, `src/server/codex-usage.ts`, `src/server/reported-usage.ts`).
+2. **Executable CLI Launcher Binary & Packaging (`bin/agent-office.js`, `src/server/cli.ts`, `src/server/config.ts`)**:
+   - Created standalone executable CLI launcher `bin/agent-office.js` with `#!/usr/bin/env node` and dynamic ES module import of `dist/server/server/cli.js`.
+   - Verified configuration parsing (`--port`, `--host`, `--password`, `--no-open`, `--max-workers`, `--budget`, `--city`, `--weather`).
+   - Verified live boot: prints welcome banner, room code, join URL, auto-discovers agent CLIs, binds port, and cleanly stops with `shutdown()`.
+3. **Desk Sign & In-World Whiteboard Integration Fixes (`src/client/world/desksigns.ts`, `src/client/world/whiteboard.ts`, `src/shared/protocol.ts`)**:
+   - Implemented `WorkerDeskBadge` and `DeskSigns.setWorkers` with dynamic role/status badges and automatic desk turnover restoration reverting to base floorplan labels.
+   - Added `WhiteboardStand.showSwarm` rendering the live autonomous Swarm DAG onto the rolling whiteboard canvas, seamlessly falling back to collaborative drawing when idle.
+   - Fixed wire protocol types (`BallState`) between `src/shared/hoop.ts` and `src/shared/protocol.ts`.
+4. **Comprehensive Automated Verification (198 / 198 Passing Tests)**:
+   - Added `tests/server-launcher.test.ts` (verifying binary launcher existence, CLI argument parsing, dynamic server port binding, HTTP 200 response, and clean graceful shutdown).
+   - 198 / 198 tests passing across all test files (`npm test`).
+   - Zero TypeScript compilation errors (`npm run typecheck`).
+   - Complete client and server compilation verified (`npm run build`).
