@@ -2,6 +2,8 @@ import * as THREE from 'three';
 import { MEETING_PATTERNS, meetingStage, meetingSummary } from '../../shared/meetings';
 import { fmtCost, fmtTokens, type Meeting, type MeetingState } from '../../shared/protocol';
 
+import { renderSwarmDag } from './swarm-dag-render';
+
 const FONT = 'Nunito, ui-rounded, system-ui, sans-serif';
 const MONO = 'ui-monospace, SFMono-Regular, Menlo, monospace';
 const INK = '#2b2d42';
