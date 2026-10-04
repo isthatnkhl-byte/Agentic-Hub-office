@@ -30,7 +30,7 @@ export interface Collider {
   fence?: boolean;
 }
 
-export type InteractKind = 'desk' | 'station' | 'issues' | 'pulls' | 'services' | 'queue' | 'tv' | 'coffee' | 'decor' | 'smoke' | 'elevator' | 'gong' | 'dog' | 'jukebox' | 'seat' | 'whiteboard' | 'cabinet' | 'ladder' | 'pole' | 'meeting' | 'bar' | 'dj' | 'bookshelf' | 'darts' | 'axe' | 'telescope' | 'expand' | 'herald';
+export type InteractKind = 'desk' | 'station' | 'issues' | 'pulls' | 'services' | 'queue' | 'tv' | 'coffee' | 'decor' | 'smoke' | 'elevator' | 'gong' | 'dog' | 'jukebox' | 'seat' | 'whiteboard' | 'cabinet' | 'ladder' | 'pole' | 'meeting' | 'bar' | 'dj' | 'bookshelf' | 'darts' | 'axe' | 'telescope' | 'expand' | 'herald' | 'car' | 'golf' | 'ball';
 
 /** Something you can use. Its scene object carries it as `userData.interact`, for clicking. */
 export interface Interactable {
@@ -43,6 +43,8 @@ export interface Interactable {
   deskId?: string;
   decorId?: string;
   seatId?: string;
+  /** Which car, for cars in the garage. */
+  car?: number;
   /** Which of POLES, for a fire pole. */
   pole?: number;
   /** Put away for now (a bean bag nobody needs yet): can't be used. */
